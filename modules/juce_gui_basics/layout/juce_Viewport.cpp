@@ -212,9 +212,11 @@ void Viewport::updateVisibleArea()
             hBarVisible = canShowHBar && (hBarVisible || contentComp->getX() < 0 || contentComp->getRight() > contentArea.getWidth());
             vBarVisible = canShowVBar && (vBarVisible || contentComp->getY() < 0 || contentComp->getBottom() > contentArea.getHeight());
 
+#ifndef JUCE_IOS
             if (vBarVisible)
                 contentArea.setWidth (getWidth() - scrollbarWidth);
-
+#endif
+    
             if (hBarVisible)
                 contentArea.setHeight (getHeight() - scrollbarWidth);
 
@@ -224,8 +226,9 @@ void Viewport::updateVisibleArea()
                 vBarVisible = canShowVBar && (vBarVisible || contentComp->getBottom() > contentArea.getHeight());
             }
         }
-
+#ifndef JUCE_IOS
         if (vBarVisible)  contentArea.setWidth  (getWidth()  - scrollbarWidth);
+#endif
         if (hBarVisible)  contentArea.setHeight (getHeight() - scrollbarWidth);
 
         if (contentComp == nullptr)
@@ -257,7 +260,11 @@ void Viewport::updateVisibleArea()
     if (canShowHBar && ! hBarVisible)
         visibleOrigin.setX (0);
 
+#if JUCE_IOS
+    verticalScrollBar.setBounds (contentArea.getWidth() - scrollbarWidth, 0, scrollbarWidth, contentArea.getHeight());
+#else
     verticalScrollBar.setBounds (contentArea.getWidth(), 0, scrollbarWidth, contentArea.getHeight());
+#endif
     verticalScrollBar.setRangeLimits (0.0, contentBounds.getHeight());
     verticalScrollBar.setCurrentRange (visibleOrigin.y, contentArea.getHeight());
     verticalScrollBar.setSingleStepSize (singleStepY);

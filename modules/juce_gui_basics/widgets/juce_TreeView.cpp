@@ -389,11 +389,144 @@ private:
 };
 
 //==============================================================================
+
+#define TimerInterval 10
+
+class DraggableViewport : public Viewport,
+                        public MultiTimer
+
+
+
+{
+public:
+    
+    DraggableViewport(String name)
+    : Viewport(name),
+    lastPivotY(0),
+    lastPivotCompY(0),
+    lastVerticalDistance (0),
+    currentVerticalDistance(0),
+    highestPixelsPerInterval(0)
+    {
+        getVerticalScrollBar()->setAlpha(0.7);
+        setScrollBarsShown(false, false);
+    }
+    
+    void mouseDown(const MouseEvent &event)
+    {
+        stopTimer(FadeScrollbar);
+        stopTimer(AutoScroll);
+        getVerticalScrollBar()->setAlpha(0.7);
+        resetDragStats(event);
+    }
+    
+    void mouseUp(const MouseEvent &event)
+    {
+        highestPixelsPerInterval = 0;
+        
+        for (int i = 0; i < pixelsPerInterval.size(); i++)
+        {
+            if (abs(pixelsPerInterval[i]) > abs(highestPixelsPerInterval))
+                highestPixelsPerInterval = pixelsPerInterval[i];
+        }
+        
+        resetDragStats(event);
+        
+        startTimer(AutoScroll, TimerInterval);
+    }
+    
+    void mouseDrag(const MouseEvent &event)
+    {
+        if (!isVerticalScrollBarShown())
+            setScrollBarsShown(true, false);
+        
+        currentVerticalDistance = event.getScreenY() - lastPivotY;
+        
+        int timeSinceLastDrag = abs(event.eventTime.getMilliseconds() - lastDragTime.getMilliseconds());
+        
+        if (timeSinceLastDrag == 0)
+            timeSinceLastDrag = 1;
+        
+        int pixels = TimerInterval * abs(currentVerticalDistance - lastVerticalDistance) / timeSinceLastDrag;
+        
+        if (pixels != 0)
+        {
+            if (currentVerticalDistance < -1)
+                pixels *= -1;
+            
+            pixelsPerInterval.add(pixels);
+        }
+        
+        if (pixelsPerInterval.size() > 3)
+            pixelsPerInterval.remove(0);
+        
+        if (abs(currentVerticalDistance) < abs(lastVerticalDistance)) // if drag direction is reversed...
+            resetDragStats(event);
+        else
+            lastVerticalDistance = currentVerticalDistance;
+        
+        setViewPosition(getViewPositionX(), lastPivotCompY - currentVerticalDistance);
+        
+        lastDragTime = event.eventTime;
+    }
+    
+    void resetDragStats(const MouseEvent &event)
+    {
+        lastPivotCompY = getViewPositionY();
+        lastPivotY = event.getScreenY();
+        lastVerticalDistance = 0;
+        currentVerticalDistance = 0;
+        pixelsPerInterval.clear();
+    }
+    
+    void timerCallback(int timerId)
+    {
+        if (timerId == AutoScroll)
+        {
+            setViewPosition(getViewPositionX(), getViewPositionY() - highestPixelsPerInterval);
+            
+            highestPixelsPerInterval *= 0.99;
+            
+            if (getViewPositionY() == lastPivotCompY || highestPixelsPerInterval == 0)
+            {
+                stopTimer(AutoScroll);
+                startTimer(FadeScrollbar, TimerInterval);
+            }
+        }
+        else if (timerId == FadeScrollbar)
+        {
+            float alpha = getVerticalScrollBar()->getAlpha();
+            getVerticalScrollBar()->setAlpha(alpha - 0.02);
+            
+            if (alpha < 0.01)
+            {
+                setScrollBarsShown(false, false);
+                stopTimer(FadeScrollbar);
+            }
+        }
+    }
+    
+private:
+    
+    Array<int> pixelsPerInterval;
+    int lastPivotY, lastPivotCompY, lastVerticalDistance, currentVerticalDistance, highestPixelsPerInterval;
+    Time lastDragTime;
+    
+    enum TimerIDs {AutoScroll, FadeScrollbar};
+};
+
+#if JUCE_IOS
+class TreeView::TreeViewport  : public DraggableViewport
+{
+public:
+    TreeViewport() noexcept : DraggableViewport(""), lastX (-1)     {}
+#else
 class TreeView::TreeViewport  : public Viewport
 {
 public:
     TreeViewport() noexcept : lastX (-1)    {}
-
+#endif
+    
     void updateComponents (const bool triggerResize)
     {
         if (ContentComponent* const tvc = getContentComp())
