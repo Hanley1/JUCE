@@ -1237,4 +1237,3 @@ namespace juce {
     {
         return new iOSAudioIODeviceType();
     }
-    No newline at end of file
