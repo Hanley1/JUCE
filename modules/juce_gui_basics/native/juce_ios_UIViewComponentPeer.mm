@@ -363,6 +363,27 @@ static bool isKioskModeView (JuceUIViewController* c)
 - (void) viewDidLoad
 {
     sendScreenBoundsUpdate (self);
+    
+    // Listen for keyboard appearances and disappearances
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardDidShow:)
+                                                 name:UIKeyboardDidShowNotification
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardDidHide:)
+                                                 name:UIKeyboardDidHideNotification
+                                               object:nil];
+}
+
+- (void)keyboardDidShow: (NSNotification *) notif
+{
+    TextEditor::virtualKeyboardIsShowing = true;
+}
+
+- (void)keyboardDidHide: (NSNotification *) notif
+{
+    TextEditor::virtualKeyboardIsShowing = false;
 }
 
 - (void) viewWillAppear: (BOOL) animated
