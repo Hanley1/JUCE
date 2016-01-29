@@ -22,6 +22,131 @@
   ==============================================================================
 */
 
+#if JUCE_IOS
+#define TimerInterval 10
+
+// UGLY FIX!! This is an exact copy of the DraggableViewport from juce_TreeView.cpp which in turn is a copy of the original in CustomControls.h. Whenever I try to include them I get a shit ton of juce errors. Not sure how to fix that hence this shit sandwich of a fix.
+class DraggableViewportCopy : public Viewport,
+public MultiTimer
+{
+public:
+    
+    DraggableViewportCopy(String name)
+    : Viewport(name),
+    lastPivotY(0),
+    lastPivotCompY(0),
+    lastVerticalDistance (0),
+    currentVerticalDistance(0),
+    highestPixelsPerInterval(0)
+    {
+        getVerticalScrollBar()->setAlpha(0.7);
+        setScrollBarsShown(false, false);
+    }
+    
+    void mouseDown(const MouseEvent &event)
+    {
+        stopTimer(FadeScrollbar);
+        stopTimer(AutoScroll);
+        getVerticalScrollBar()->setAlpha(0.7);
+        resetDragStats(event);
+    }
+    
+    void mouseUp(const MouseEvent &event)
+    {
+        highestPixelsPerInterval = 0;
+        
+        for (int i = 0; i < pixelsPerInterval.size(); i++)
+        {
+            if (abs(pixelsPerInterval[i]) > abs(highestPixelsPerInterval))
+                highestPixelsPerInterval = pixelsPerInterval[i];
+        }
+        
+        resetDragStats(event);
+        
+        startTimer(AutoScroll, TimerInterval);
+    }
+    
+    void mouseDrag(const MouseEvent &event)
+    {
+        if (!isVerticalScrollBarShown())
+            setScrollBarsShown(true, false);
+        
+        currentVerticalDistance = event.getScreenY() - lastPivotY;
+        
+        int timeSinceLastDrag = abs(event.eventTime.getMilliseconds() - lastDragTime.getMilliseconds());
+        
+        if (timeSinceLastDrag == 0)
+            timeSinceLastDrag = 1;
+        
+        int pixels = TimerInterval * abs(currentVerticalDistance - lastVerticalDistance) / timeSinceLastDrag;
+        
+        if (pixels != 0)
+        {
+            if (currentVerticalDistance < -1)
+                pixels *= -1;
+            
+            pixelsPerInterval.add(pixels);
+        }
+        
+        if (pixelsPerInterval.size() > 3)
+            pixelsPerInterval.remove(0);
+        
+        if (abs(currentVerticalDistance) < abs(lastVerticalDistance)) // if drag direction is reversed...
+            resetDragStats(event);
+        else
+            lastVerticalDistance = currentVerticalDistance;
+        
+        setViewPosition(getViewPositionX(), lastPivotCompY - currentVerticalDistance);
+        
+        lastDragTime = event.eventTime;
+    }
+    
+    void resetDragStats(const MouseEvent &event)
+    {
+        lastPivotCompY = getViewPositionY();
+        lastPivotY = event.getScreenY();
+        lastVerticalDistance = 0;
+        currentVerticalDistance = 0;
+        pixelsPerInterval.clear();
+    }
+    
+    void timerCallback(int timerId)
+    {
+        if (timerId == AutoScroll)
+        {
+            setViewPosition(getViewPositionX(), getViewPositionY() - highestPixelsPerInterval);
+            
+            highestPixelsPerInterval *= 0.99;
+            
+            if (getViewPositionY() == lastPivotCompY || highestPixelsPerInterval == 0)
+            {
+                stopTimer(AutoScroll);
+                startTimer(FadeScrollbar, TimerInterval);
+            }
+        }
+        else if (timerId == FadeScrollbar)
+        {
+            float alpha = getVerticalScrollBar()->getAlpha();
+            getVerticalScrollBar()->setAlpha(alpha - 0.02);
+            
+            if (alpha < 0.01)
+            {
+                setScrollBarsShown(false, false);
+                stopTimer(FadeScrollbar);
+            }
+        }
+    }
+    
+private:
+    
+    Array<int> pixelsPerInterval;
+    int lastPivotY, lastPivotCompY, lastVerticalDistance, currentVerticalDistance, highestPixelsPerInterval;
+    Time lastDragTime;
+    
+    enum TimerIDs {AutoScroll, FadeScrollbar};
+};
+#endif
+
 class ListBox::RowComponent  : public Component,
                                public TooltipClient
 {
@@ -29,6 +154,9 @@ public:
     RowComponent (ListBox& lb)
         : owner (lb), row (-1),
           selected (false), isDragging (false), selectRowOnMouseUp (false)
+#if JUCE_IOS
+            , isPressed(false)
+#endif
     {
     }
 
@@ -63,6 +191,14 @@ public:
 
     void mouseDown (const MouseEvent& e) override
     {
+#if JUCE_IOS
+        DraggableViewportCopy* viewport = reinterpret_cast<DraggableViewportCopy*>(owner.getViewport());
+        
+        if (viewport)
+            viewport->mouseDown(e);
+        
+        isPressed = true;
+#else
         isDragging = false;
         selectRowOnMouseUp = false;
 
@@ -80,10 +216,29 @@ public:
                 selectRowOnMouseUp = true;
             }
         }
+#endif
     }
 
     void mouseUp (const MouseEvent& e) override
     {
+#if JUCE_IOS
+        isDragging = false;
+        
+        DraggableViewportCopy* viewport = reinterpret_cast<DraggableViewportCopy*>(owner.getViewport());
+        
+        if (viewport)
+            viewport->mouseUp(e);
+        
+        if (isPressed == true)
+        {
+            repaint();
+            
+            owner.selectRowsBasedOnModifierKeys (row, e.mods, true);
+            
+            if (ListBoxModel* m = owner.getModel())
+                m->listBoxItemClicked (row, e);
+        }
+#else
         if (isEnabled() && selectRowOnMouseUp && ! isDragging)
         {
             owner.selectRowsBasedOnModifierKeys (row, e.mods, true);
@@ -91,6 +246,7 @@ public:
             if (ListBoxModel* m = owner.getModel())
                 m->listBoxItemClicked (row, e);
         }
+#endif
     }
 
     void mouseDoubleClick (const MouseEvent& e) override
@@ -102,6 +258,17 @@ public:
 
     void mouseDrag (const MouseEvent& e) override
     {
+#if JUCE_IOS
+        isDragging = true;
+        
+        if (abs(e.getDistanceFromDragStartY()) > 10)
+            isPressed = false;
+        
+        DraggableViewportCopy* viewport = reinterpret_cast<DraggableViewportCopy*>(owner.getViewport());
+        
+        if (viewport)
+            viewport->mouseDrag(e);
+#else
         if (ListBoxModel* m = owner.getModel())
         {
             if (isEnabled() && ! (e.mouseWasClicked() || isDragging))
@@ -125,6 +292,7 @@ public:
                 }
             }
         }
+#endif
     }
 
     void resized() override
@@ -147,17 +315,27 @@ private:
     ListBox& owner;
     int row;
     bool selected, isDragging, selectRowOnMouseUp;
+#if JUCE_IOS
+    bool isPressed;
+#endif
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RowComponent)
 };
 
-
+#if JUCE_IOS
 //==============================================================================
+class ListBox::ListViewport  : public DraggableViewportCopy
+{
+public:
+    ListViewport (ListBox& lb)
+    : DraggableViewportCopy(""), owner (lb)
+#else
 class ListBox::ListViewport  : public Viewport
 {
 public:
     ListViewport (ListBox& lb)
         : owner (lb)
+#endif
     {
         setWantsKeyboardFocus (false);
 
