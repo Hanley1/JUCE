@@ -639,6 +639,8 @@ public:
     /** @internal */
     VirtualKeyboardType getKeyboardType() override    { return keyboardType; }
 
+static bool virtualKeyboardIsShowing;
+
 protected:
     //==============================================================================
     /** Scrolls the minimum distance needed to get the caret into view. */

@@ -896,6 +896,8 @@ namespace TextEditorDefs
     }
 }
 
+bool TextEditor::virtualKeyboardIsShowing = false;
+
 //==============================================================================
 TextEditor::TextEditor (const String& name,
                         const juce_wchar passwordChar)
