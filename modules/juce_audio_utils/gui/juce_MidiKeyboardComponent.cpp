@@ -269,6 +269,7 @@ void MidiKeyboardComponent::getKeyPos (int midiNoteNumber, int& x, int& w) const
 
     x -= xOffset + rx;
 }
+#endif
 
 Rectangle<int> MidiKeyboardComponent::getRectangleForKey (const int note) const
 {
