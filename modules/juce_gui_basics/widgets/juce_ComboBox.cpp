@@ -449,6 +449,9 @@ void ComboBox::lookAndFeelChanged()
     label->setColour (TextEditor::backgroundColourId, Colours::transparentBlack);
     label->setColour (TextEditor::highlightColourId, findColour (TextEditor::highlightColourId));
     label->setColour (TextEditor::outlineColourId, Colours::transparentBlack);
+    
+    // without this, comboboxes in the synth component flicker and fight with the keyboardComponent's focus
+    label->setMouseClickGrabsKeyboardFocus(false);
 
     resized();
 }
