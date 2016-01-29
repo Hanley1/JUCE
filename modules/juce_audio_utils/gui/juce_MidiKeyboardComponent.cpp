@@ -667,7 +667,7 @@ void MidiKeyboardComponent::resized()
 
             int newOffset = 0;
             getKeyPos ((int) firstKey, newOffset, kw);
-            xOffset = newOffset;
+            xOffset = newOffset - scrollButtonW;
         }
         else
         {
