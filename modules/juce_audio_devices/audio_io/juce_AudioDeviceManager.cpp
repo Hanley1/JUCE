@@ -160,6 +160,8 @@ AudioDeviceManager::AudioDeviceManager()
 
 AudioDeviceManager::~AudioDeviceManager()
 {
+    if (currentAudioDevice)
+        currentAudioDevice->closeAudioUnit();
     currentAudioDevice = nullptr;
     defaultMidiOutput = nullptr;
 
