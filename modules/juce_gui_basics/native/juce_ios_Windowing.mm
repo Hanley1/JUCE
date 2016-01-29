@@ -35,11 +35,14 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
 } // (juce namespace)
 
+#import<Dropbox/Dropbox.h>
+
 @interface JuceAppStartupDelegate : NSObject <UIApplicationDelegate>
 {
 }
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application;
+- (BOOL) application:(UIApplication*)app openURL:(NSURL*)url sourceApplication:(NSString*)source annotation:(id)annotation;
 - (void) applicationWillTerminate: (UIApplication*) application;
 - (void) applicationDidEnterBackground: (UIApplication*) application;
 - (void) applicationWillEnterForeground: (UIApplication*) application;
@@ -57,6 +60,33 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
     if (JUCEApplicationBase* app = JUCEApplicationBase::createInstance())
     {
+        NSError* error = nil;
+        
+        // exclude Application Support/Resources folder from backup.
+        
+        NSURL *applicationSupportDirectory = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
+                                                                                    inDomain:NSUserDomainMask
+                                                                           appropriateForURL:nil
+                                                                                      create:YES
+                                                                                       error:&error];
+        if (error)
+            NSLog(@"KCDM: Could not create application support directory. %@", error);
+        
+        NSURL *resourcesFolder = [applicationSupportDirectory URLByAppendingPathComponent:@"Resources" isDirectory:YES];
+        
+        if (![[NSFileManager defaultManager] createDirectoryAtPath:[resourcesFolder path]
+                                       withIntermediateDirectories:YES
+                                                        attributes:nil
+                                                             error:&error])
+        {
+            NSLog(@"KCDM: Error creating Resources folder: %@", error);
+        }
+        
+        BOOL success = [resourcesFolder setResourceValue:@YES forKey: NSURLIsExcludedFromBackupKey error: &error];
+        
+        if (!success)
+            NSLog(@"KCDM: Error excluding %@ from backup %@", resourcesFolder, error);
+        
         if (! app->initialiseApp())
             exit (app->shutdownApp());
     }
@@ -64,6 +94,13 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
     {
         jassertfalse; // you must supply an application object for an iOS app!
     }
+}
+
+- (BOOL)application:(UIApplication*)app openURL:(NSURL*)url
+  sourceApplication:(NSString*)source annotation:(id)annotation
+{
+    [[DBAccountManager sharedManager]handleOpenURL:url];
+    return YES;
 }
 
 - (void) applicationWillTerminate: (UIApplication*) application
