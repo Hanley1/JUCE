@@ -294,6 +294,18 @@ public:
         If the device doesn't support this operation, it'll return false.
     */
     virtual bool setAudioPreprocessingEnabled (bool shouldBeEnabled);
+    
+    // NEW virtuals for iOSAudioIODevice
+    virtual void closeAudioUnit() {}
+    virtual void toggleHostPlayback() {}
+    virtual void toggleHostRecord() {}
+    virtual void toggleHostRewind() {}
+    virtual void* getHostIcon() {return nullptr;}
+    virtual void goToHost() {}
+    virtual void getHostTransportInfo(bool* isPlaying, bool* isRecording, String* playTimeString) {}
+    virtual float getHostTempo() {return 120.0;}
+    virtual void getHostPlayHeadPositionInfo(double* ppqPosition, double* ppqPositionOfLastBarStart) {}
+    virtual bool isHostConnectedViaIAA() {return false;}
 
     //==============================================================================
 protected:
