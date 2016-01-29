@@ -199,6 +199,46 @@ void MidiKeyboardComponent::setVelocity (const float v, const bool useMousePosit
 }
 
 //==============================================================================
+
+#if JUCE_IOS
+void MidiKeyboardComponent::getKeyPosition (float midiNoteNumber, const float keyWidth_, int& x, int& w) const
+{
+    jassert (midiNoteNumber >= 0 && midiNoteNumber < 128);
+    
+    static const float blackNoteWidth = 0.7f;
+    
+    static const float notePos[] = { 0.0f, 1 - blackNoteWidth * 0.6f,
+        1.0f, 2 - blackNoteWidth * 0.4f,
+        2.0f,
+        3.0f, 4 - blackNoteWidth * 0.7f,
+        4.0f, 5 - blackNoteWidth * 0.5f,
+        5.0f, 6 - blackNoteWidth * 0.3f,
+        6.0f,
+        7.0f};
+    
+    float noteDivOctave = midiNoteNumber / 12.0;
+    const int octave = (int) noteDivOctave;
+    const float noteFloat = 12.0 * (float)(noteDivOctave - octave);
+    
+    int note = (int)noteFloat;
+    float noteRemainder = noteFloat - (float)note;
+    float noteForX = notePos[note] + noteRemainder * (notePos[note + 1] - notePos[note]);
+    
+    x = roundToInt (octave * 7.0f * keyWidth_ + noteForX * keyWidth_);
+    
+    w = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
+}
+
+void MidiKeyboardComponent::getKeyPos (float midiNoteNumber, int& x, int& w) const
+{
+    getKeyPosition (midiNoteNumber, keyWidth, x, w);
+    
+    int rx, rw;
+    getKeyPosition (rangeStart, keyWidth, rx, rw);
+    
+    x -= xOffset + rx;
+}
+#else
 void MidiKeyboardComponent::getKeyPosition (int midiNoteNumber, const float keyWidth_, int& x, int& w) const
 {
     jassert (midiNoteNumber >= 0 && midiNoteNumber < 128);
@@ -632,6 +672,7 @@ void MidiKeyboardComponent::resized()
 
         if (canScroll)
         {
+#ifndef JUCE_IOS
             const int scrollButtonW = jmin (12, w / 2);
             Rectangle<int> r (getLocalBounds());
 
@@ -650,6 +691,7 @@ void MidiKeyboardComponent::resized()
                 scrollDown->setBounds (r.removeFromBottom (scrollButtonW));
                 scrollUp  ->setBounds (r.removeFromTop    (scrollButtonW));
             }
+#endif
 
             int endOfLastKey, kw;
             getKeyPos (rangeEnd, endOfLastKey, kw);
@@ -666,8 +708,14 @@ void MidiKeyboardComponent::resized()
             }
 
             int newOffset = 0;
+            
+#if JUCE_IOS
+            getKeyPos (firstKey, newOffset, kw);
+            xOffset = newOffset;
+#else
             getKeyPos ((int) firstKey, newOffset, kw);
-            xOffset = newOffset - scrollButtonW;
+            xOffset = newOffset - scrollButtonW; // this fixes the uneven alignment introduced in a previous JUCE update
+#endif
         }
         else
         {

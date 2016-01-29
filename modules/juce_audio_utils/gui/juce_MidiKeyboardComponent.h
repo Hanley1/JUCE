@@ -160,10 +160,20 @@ public:
     */
     void setLowestVisibleKey (int noteNumber);
 
+#if JUCE_IOS
+    void setLowestVisibleKeyFloat (float noteNumber);
+#endif
+    
     /** Returns the number of the first key shown in the component.
-        @see setLowestVisibleKey
-    */
+     @see setLowestVisibleKey
+     */
+    
+#if JUCE_IOS
+    float getLowestVisibleKey() const noexcept                      { return firstKey; }
+#else
     int getLowestVisibleKey() const noexcept                        { return (int) firstKey; }
+#endif
+
 
     /** Sets the length of the black notes as a proportion of the white note length. */
     void setBlackNoteLengthProportion (float ratio) noexcept;
@@ -262,6 +272,10 @@ public:
         @see setOctaveForMiddleC
     */
     int getOctaveForMiddleC() const noexcept            { return octaveNumForMiddleC; }
+    
+#if JUCE_IOS
+    void disableMousePosCheck() {shouldCheckMousePos = false;}
+#endif
 
     //==============================================================================
     /** @internal */
@@ -369,8 +383,15 @@ protected:
                                 always works in terms of a horizontal keyboard)
         @param w                the width of the key
     */
+    
+#if JUCE_IOS
+    virtual void getKeyPosition (float midiNoteNumber, float keyWidth,
+                                 int& x, int& w) const;
+#else
     virtual void getKeyPosition (int midiNoteNumber, float keyWidth,
                                  int& x, int& w) const;
+#endif
+
 
     /** Returns the rectangle for a given key if within the displayable range */
     Rectangle<int> getRectangleForKey (int midiNoteNumber) const;
@@ -405,15 +426,23 @@ private:
     static const uint8 whiteNotes[];
     static const uint8 blackNotes[];
 
+#if JUCE_IOS
+    void getKeyPos (float midiNoteNumber, int& x, int& w) const;
+#else
     void getKeyPos (int midiNoteNumber, int& x, int& w) const;
+#endif
+
     int xyToNote (Point<int>, float& mousePositionVelocity);
     int remappedXYToNote (Point<int>, float& mousePositionVelocity) const;
     void resetAnyKeysInUse();
     void updateNoteUnderMouse (Point<int>, bool isDown, int fingerNum);
     void updateNoteUnderMouse (const MouseEvent&, bool isDown);
     void repaintNote (int midiNoteNumber);
+    
+#ifndef JUCE_IOS
     void setLowestVisibleKeyFloat (float noteNumber);
-
+#endif
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiKeyboardComponent)
 };
 
