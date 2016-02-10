@@ -35,7 +35,7 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
 } // (juce namespace)
 
-#import<Dropbox/Dropbox.h>
+#import<DropboxSDK/DropboxSDK.h>
 
 @interface JuceAppStartupDelegate : NSObject <UIApplicationDelegate>
 {
@@ -99,7 +99,8 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 - (BOOL)application:(UIApplication*)app openURL:(NSURL*)url
   sourceApplication:(NSString*)source annotation:(id)annotation
 {
-    [[DBAccountManager sharedManager]handleOpenURL:url];
+    //[[DBAccountManager sharedManager]handleOpenURL:url];
+    [[DBSession sharedSession] handleOpenURL:url];
     return YES;
 }
 
