@@ -271,7 +271,7 @@ public:
 #else
         if (ListBoxModel* m = owner.getModel())
         {
-            if (isEnabled() && ! (e.mouseWasClicked() || isDragging))
+            if (isEnabled() && e.mouseWasDraggedSinceMouseDown() && ! isDragging)
             {
                 SparseSet<int> rowsToDrag;
 
