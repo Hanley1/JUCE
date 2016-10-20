@@ -917,6 +917,7 @@ TextEditor::TextEditor (const String& name,
       menuActive (false),
       valueTextNeedsUpdating (false),
       consumeEscAndReturnKeys (true),
+      styleChanged (false),
       leftIndent (4),
       topIndent (4),
       lastTransactionTime (0),
@@ -1082,13 +1083,21 @@ void TextEditor::colourChanged()
 {
     setOpaque (findColour (backgroundColourId).isOpaque());
     repaint();
+    styleChanged = true;
 }
 
 void TextEditor::lookAndFeelChanged()
 {
+    colourChanged();
+
     caret = nullptr;
     recreateCaret();
     repaint();
+}
+
+void TextEditor::parentHierarchyChanged()
+{
+    lookAndFeelChanged();
 }
 
 void TextEditor::enablementChanged()
@@ -1188,7 +1197,7 @@ void TextEditor::setText (const String& newText,
 {
     const int newLength = newText.length();
 
-    if (newLength != getTotalNumChars() || getText() != newText)
+    if (newLength != getTotalNumChars() || getText() != newText || styleChanged)
     {
         textValue = newText;
 
@@ -1213,6 +1222,8 @@ void TextEditor::setText (const String& newText,
         updateTextHolderSize();
         scrollToMakeSureCursorIsVisible();
         undoManager.clearUndoHistory();
+
+        styleChanged = false;
 
         repaint();
     }

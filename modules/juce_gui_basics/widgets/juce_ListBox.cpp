@@ -306,7 +306,7 @@ public:
         if (ListBoxModel* m = owner.getModel())
             return m->getTooltipForRow (row);
 
-        return String::empty;
+        return String();
     }
 
     ScopedPointer<Component> customComponent;
@@ -730,7 +730,7 @@ SparseSet<int> ListBox::getSelectedRows() const
     return selected;
 }
 
-void ListBox::selectRangeOfRows (int firstRow, int lastRow)
+void ListBox::selectRangeOfRows (int firstRow, int lastRow, bool dontScrollToShowThisRange)
 {
     if (multipleSelection && (firstRow != lastRow))
     {
@@ -744,7 +744,7 @@ void ListBox::selectRangeOfRows (int firstRow, int lastRow)
         selected.removeRange (Range<int> (lastRow, lastRow + 1));
     }
 
-    selectRowInternal (lastRow, false, false, true);
+    selectRowInternal (lastRow, dontScrollToShowThisRange, false, true);
 }
 
 void ListBox::flipRowSelection (const int row)
@@ -1142,5 +1142,5 @@ void ListBoxModel::deleteKeyPressed (int) {}
 void ListBoxModel::returnKeyPressed (int) {}
 void ListBoxModel::listWasScrolled() {}
 var ListBoxModel::getDragSourceDescription (const SparseSet<int>&)      { return var(); }
-String ListBoxModel::getTooltipForRow (int)                             { return String::empty; }
+String ListBoxModel::getTooltipForRow (int)                             { return String(); }
 MouseCursor ListBoxModel::getMouseCursorForRow (int)                    { return MouseCursor::NormalCursor; }

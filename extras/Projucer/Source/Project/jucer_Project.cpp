@@ -59,6 +59,8 @@ Project::Project (const File& f)
     setChangedFlag (false);
 
     projectRoot.addListener (this);
+
+    modificationTime = getFile().getLastModificationTime();
 }
 
 Project::~Project()
@@ -127,41 +129,48 @@ void Project::setMissingDefaultValues()
     if (getBundleIdentifier().toString().isEmpty())
         getBundleIdentifier() = getDefaultBundleIdentifier();
 
-    if (shouldIncludeBinaryInAppConfig() == var::null)
+    if (shouldIncludeBinaryInAppConfig() == var())
         shouldIncludeBinaryInAppConfig() = true;
 
     ProjucerApplication::getApp().updateNewlyOpenedProject (*this);
+}
+
+void Project::updateDeprecatedProjectSettingsInteractively()
+{
+    jassert (! ProjucerApplication::getApp().isRunningCommandLine);
+
+    for (Project::ExporterIterator exporter (*this); exporter.next();)
+        exporter->updateDeprecatedProjectSettingsInteractively();
 }
 
 void Project::setMissingAudioPluginDefaultValues()
 {
     const String sanitisedProjectName (CodeHelpers::makeValidIdentifier (getTitle(), false, true, false));
 
-    setValueIfVoid (shouldBuildVST(), true);
-    setValueIfVoid (shouldBuildVST3(), false);
-    setValueIfVoid (shouldBuildAU(),  true);
-    setValueIfVoid (shouldBuildAUv3(),  false);
-    setValueIfVoid (shouldBuildRTAS(), false);
-    setValueIfVoid (shouldBuildAAX(), false);
-    setValueIfVoid (shouldBuildStandalone(), false);
+    setValueIfVoid (shouldBuildVST(),                   true);
+    setValueIfVoid (shouldBuildVST3(),                  false);
+    setValueIfVoid (shouldBuildAU(),                    true);
+    setValueIfVoid (shouldBuildAUv3(),                  false);
+    setValueIfVoid (shouldBuildRTAS(),                  false);
+    setValueIfVoid (shouldBuildAAX(),                   false);
+    setValueIfVoid (shouldBuildStandalone(),            false);
 
-    setValueIfVoid (getPluginName(),                   getTitle());
-    setValueIfVoid (getPluginDesc(),                   getTitle());
-    setValueIfVoid (getPluginManufacturer(),           "yourcompany");
-    setValueIfVoid (getPluginManufacturerCode(),       "Manu");
-    setValueIfVoid (getPluginCode(),                   makeValid4CC (getProjectUID() + getProjectUID()));
-    setValueIfVoid (getPluginChannelConfigs(),         "");
-    setValueIfVoid (getPluginIsSynth(),                false);
-    setValueIfVoid (getPluginWantsMidiInput(),         false);
-    setValueIfVoid (getPluginProducesMidiOut(),        false);
-    setValueIfVoid (getPluginIsMidiEffectPlugin(),     false);
-    setValueIfVoid (getPluginEditorNeedsKeyFocus(),    false);
-    setValueIfVoid (getPluginAUExportPrefix(),         sanitisedProjectName + "AU");
-    setValueIfVoid (getPluginRTASCategory(),           String::empty);
-    setValueIfVoid (getBundleIdentifier(),             getDefaultBundleIdentifier());
-    setValueIfVoid (getAAXIdentifier(),                getDefaultAAXIdentifier());
-    setValueIfVoid (getPluginAAXCategory(),            "AAX_ePlugInCategory_Dynamics");
-
+    setValueIfVoid (getPluginName(),                    getTitle());
+    setValueIfVoid (getPluginDesc(),                    getTitle());
+    setValueIfVoid (getPluginManufacturer(),            "yourcompany");
+    setValueIfVoid (getPluginManufacturerCode(),        "Manu");
+    setValueIfVoid (getPluginCode(),                    makeValid4CC (getProjectUID() + getProjectUID()));
+    setValueIfVoid (getPluginChannelConfigs(),          String());
+    setValueIfVoid (getPluginIsSynth(),                 false);
+    setValueIfVoid (getPluginWantsMidiInput(),          false);
+    setValueIfVoid (getPluginProducesMidiOut(),         false);
+    setValueIfVoid (getPluginIsMidiEffectPlugin(),      false);
+    setValueIfVoid (getPluginEditorNeedsKeyFocus(),     false);
+    setValueIfVoid (getPluginAUExportPrefix(),          sanitisedProjectName + "AU");
+    setValueIfVoid (getPluginRTASCategory(),            String());
+    setValueIfVoid (getBundleIdentifier(),              getDefaultBundleIdentifier());
+    setValueIfVoid (getAAXIdentifier(),                 getDefaultAAXIdentifier());
+    setValueIfVoid (getPluginAAXCategory(),             "AAX_ePlugInCategory_Dynamics");
 }
 
 void Project::updateOldStyleConfigList()
@@ -368,10 +377,24 @@ void Project::valueTreeChildOrderChanged (ValueTree&, int, int)     { changed();
 void Project::valueTreeParentChanged (ValueTree&)                   {}
 
 //==============================================================================
+bool Project::hasProjectBeenModified()
+{
+    Time newModificationTime = getFile().getLastModificationTime();
+
+    if (newModificationTime != modificationTime)
+    {
+        modificationTime = newModificationTime;
+        return true;
+    }
+
+    return false;
+}
+
+//==============================================================================
 File Project::resolveFilename (String filename) const
 {
     if (filename.isEmpty())
-        return File::nonexistent;
+        return File();
 
     filename = replacePreprocessorDefs (getPreprocessorDefs(), filename);
 
@@ -462,10 +485,10 @@ void Project::createPropertyEditors (PropertyListBuilder& props)
         Array<var> maxSizeCodes;
 
         maxSizeNames.add (TRANS("Default"));
-        maxSizeCodes.add (var::null);
+        maxSizeCodes.add (var());
 
-        maxSizeNames.add (String::empty);
-        maxSizeCodes.add (var::null);
+        maxSizeNames.add (String());
+        maxSizeCodes.add (var());
 
         for (int i = 0; i < numElementsInArray (maxSizes); ++i)
         {
@@ -741,7 +764,7 @@ File Project::Item::getFile() const
     if (isFile())
         return project.resolveFilename (state [Ids::file].toString());
 
-    return File::nonexistent;
+    return File();
 }
 
 void Project::Item::setFile (const File& file)
@@ -921,9 +944,13 @@ static bool isGroupSorted (const ValueTree& state, bool keepGroupsAtStart)
     return stateCopy.isEquivalentTo (state);
 }
 
-void Project::Item::sortAlphabetically (bool keepGroupsAtStart)
+void Project::Item::sortAlphabetically (bool keepGroupsAtStart, bool recursive)
 {
     sortGroup (state, keepGroupsAtStart, getUndoManager());
+
+    if (recursive)
+        for (int i = getNumChildren(); --i >= 0;)
+            getChild(i).sortAlphabetically (keepGroupsAtStart, true);
 }
 
 Project::Item Project::Item::getOrCreateSubGroup (const String& name)
@@ -955,7 +982,7 @@ Project::Item Project::Item::addNewSubGroup (const String& name, int insertIndex
 
 bool Project::Item::addFileAtIndex (const File& file, int insertIndex, const bool shouldCompile)
 {
-    if (file == File::nonexistent || file.isHidden() || file.getFileName().startsWithChar ('.'))
+    if (file == File() || file.isHidden() || file.getFileName().startsWithChar ('.'))
         return false;
 
     if (file.isDirectory())
@@ -988,7 +1015,7 @@ bool Project::Item::addFileRetainingSortOrder (const File& file, bool shouldComp
         return false;
 
     if (wasSortedGroupsNotFirst || wasSortedGroupsFirst)
-        sortAlphabetically (wasSortedGroupsFirst);
+        sortAlphabetically (wasSortedGroupsFirst, false);
 
     return true;
 }
@@ -1110,9 +1137,12 @@ String Project::getAUMainTypeString()
 
     if (s.isEmpty())
     {
-        if (getPluginIsSynth().getValue())              s = "kAudioUnitType_MusicDevice";
-        else if (getPluginWantsMidiInput().getValue())  s = "kAudioUnitType_MusicEffect";
-        else                                            s = "kAudioUnitType_Effect";
+        // Unfortunately, Rez uses a header where kAudioUnitType_MIDIProcessor is undefined
+        // Use aumi instead.
+        if      (getPluginIsMidiEffectPlugin().getValue()) s = "'aumi'";
+        else if (getPluginIsSynth().getValue())            s = "kAudioUnitType_MusicDevice";
+        else if (getPluginWantsMidiInput().getValue())     s = "kAudioUnitType_MusicEffect";
+        else                                               s = "kAudioUnitType_Effect";
     }
 
     return s;
@@ -1201,15 +1231,13 @@ void Project::createExporterForCurrentPlatform()
 String Project::getFileTemplate (const String& templateName)
 {
     int dataSize;
-    const char* data = BinaryData::getNamedResource (templateName.toUTF8(), dataSize);
 
-    if (data == nullptr)
-    {
-        jassertfalse;
-        return String::empty;
-    }
+    if (const char* data = BinaryData::getNamedResource (templateName.toUTF8(), dataSize))
+        return String::fromUTF8 (data, dataSize);
 
-    return String::fromUTF8 (data, dataSize);
+    jassertfalse;
+    return String();
+
 }
 
 //==============================================================================

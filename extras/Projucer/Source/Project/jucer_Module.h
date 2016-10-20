@@ -51,8 +51,9 @@ struct ModuleDescription
     String getLicense() const           { return moduleInfo [Ids::license].toString(); }
     String getPreprocessorDefs() const  { return moduleInfo [Ids::defines].toString(); }
     String getExtraSearchPaths() const  { return moduleInfo [Ids::searchpaths].toString(); }
+    StringArray getDependencies() const;
 
-    File getFolder() const              { jassert (moduleFolder != File::nonexistent); return moduleFolder; }
+    File getFolder() const              { jassert (moduleFolder != File()); return moduleFolder; }
     File getHeader() const;
 
     bool isPluginClient() const         { return getID() == "juce_audio_plugin_client"; }
@@ -73,7 +74,10 @@ struct ModuleList
     StringArray getIDs() const;
     void sort();
 
+    Result tryToAddModuleFromFolder (const File&);
+
     Result addAllModulesInFolder (const File&);
+    Result addAllModulesInSubfoldersRecursively (const File&, int depth);
     Result scanAllKnownFolders (Project&);
 
     OwnedArray<ModuleDescription> modules;
@@ -117,6 +121,7 @@ public:
 
 private:
     mutable Array<File> sourceFiles;
+    OwnedArray<Project::ConfigFlag> configFlags;
 
     void addBrowseableCode (ProjectExporter&, const Array<File>& compiled, const File& localModuleFolder) const;
 };

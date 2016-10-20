@@ -41,6 +41,7 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 {
 }
 
+@property (strong, nonatomic) UIWindow *window;
 - (void) applicationDidFinishLaunching: (UIApplication*) application;
 - (BOOL) application:(UIApplication*)app openURL:(NSURL*)url sourceApplication:(NSString*)source annotation:(id)annotation;
 - (void) applicationWillTerminate: (UIApplication*) application;

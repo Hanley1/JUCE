@@ -994,7 +994,7 @@ void TreeView::recalculateIfNeeded()
         if (rootItem != nullptr)
         {
             viewport->getViewedComponent()
-                ->setSize (jmax (viewport->getMaximumVisibleWidth(), rootItem->totalWidth),
+                ->setSize (jmax (viewport->getMaximumVisibleWidth(), rootItem->totalWidth + 50),
                            rootItem->totalHeight - (rootItemVisible ? 0 : rootItem->itemHeight));
         }
         else
@@ -1224,7 +1224,7 @@ void TreeView::fileDragEnter (const StringArray& files, int x, int y)
 
 void TreeView::fileDragMove (const StringArray& files, int x, int y)
 {
-    handleDrag (files, SourceDetails (String::empty, this, Point<int> (x, y)));
+    handleDrag (files, SourceDetails (String(), this, Point<int> (x, y)));
 }
 
 void TreeView::fileDragExit (const StringArray&)
@@ -1234,7 +1234,7 @@ void TreeView::fileDragExit (const StringArray&)
 
 void TreeView::filesDropped (const StringArray& files, int x, int y)
 {
-    handleDrop (files, SourceDetails (String::empty, this, Point<int> (x, y)));
+    handleDrop (files, SourceDetails (String(), this, Point<int> (x, y)));
 }
 
 bool TreeView::isInterestedInDragSource (const SourceDetails& /*dragSourceDetails*/)
@@ -1289,7 +1289,7 @@ TreeViewItem::~TreeViewItem()
 
 String TreeViewItem::getUniqueName() const
 {
-    return String::empty;
+    return String();
 }
 
 void TreeViewItem::itemOpennessChanged (bool)
@@ -1511,7 +1511,7 @@ void TreeViewItem::itemSelectionChanged (bool)
 
 String TreeViewItem::getTooltip()
 {
-    return String::empty;
+    return String();
 }
 
 void TreeViewItem::ownerViewChanged (TreeView*)
@@ -1692,6 +1692,9 @@ void TreeViewItem::paintRecursively (Graphics& g, int width)
         {
             if (isSelected())
                 g.fillAll (ownerView->findColour (TreeView::selectedItemBackgroundColourId));
+            else
+                g.fillAll ((getRowNumberInTree() % 2 == 0) ? ownerView->findColour (TreeView::oddItemsColourId)
+                                                           : ownerView->findColour (TreeView::evenItemsColourId));
 
             paintItem (g, itemWidth < 0 ? width - indent : itemWidth, itemHeight);
         }
@@ -1888,6 +1891,9 @@ int TreeViewItem::getRowNumberInTree() const noexcept
 {
     if (parentItem != nullptr && ownerView != nullptr)
     {
+        if (! parentItem->isOpen())
+            return parentItem->getRowNumberInTree();
+
         int n = 1 + parentItem->getRowNumberInTree();
 
         int ourIndex = parentItem->subItems.indexOf (this);

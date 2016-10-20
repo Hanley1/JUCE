@@ -1,9 +1,23 @@
 /*
   ==============================================================================
 
-    jucer_GlobalDefaultedTextPropertyComponent.h
-    Created: 27 Jul 2015 10:42:17am
-    Author:  Joshua Gerrard
+   This file is part of the JUCE library.
+   Copyright (c) 2015 - ROLI Ltd.
+
+   Permission is granted to use this software under the terms of either:
+   a) the GPL v2 (or any later version)
+   b) the Affero GPL v3
+
+   Details of these licenses can be found at: www.gnu.org/licenses
+
+   JUCE is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+   ------------------------------------------------------------------------------
+
+   To release a closed-source product which uses JUCE, commercial licenses are
+   available: visit www.juce.com for more information.
 
   ==============================================================================
 */
@@ -68,6 +82,8 @@ public:
         return os == TargetOS::getThisOS();
     }
 
+    bool isValidPath (const File& relativeTo) const;
+
     bool isValidPath() const;
 
 private:
@@ -76,7 +92,7 @@ private:
         if ((value.refersToSameSourceAs (globalSettingsValue) && isUsingGlobalSettings()))
         {
             sendChangeMessage (true);
-            setValue (String::empty); // make sure that the project-specific value is still blank
+            setValue (String()); // make sure that the project-specific value is still blank
         }
     }
 
@@ -129,7 +145,8 @@ class DependencyPathPropertyComponent : public TextPropertyComponent,
                                         private Label::Listener
 {
 public:
-    DependencyPathPropertyComponent (const Value& value,
+    DependencyPathPropertyComponent (const File& pathRelativeToUse,
+                                     const Value& value,
                                      const String& propertyName);
 
 
@@ -143,6 +160,10 @@ private:
 
     /** This function handles path changes because the global path changed. */
     void valueChanged (Value& value) override;
+
+    /** If the dependency path is relative, relative to which directory should
+        we check if an object is available. */
+    File pathRelativeTo;
 
     /** the value that represents this dependency path setting. */
     Value pathValue;

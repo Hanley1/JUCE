@@ -165,8 +165,20 @@ private:
                 config->getValue (Ids::useRuntimeLibDLL) = true;
 
             if (isVST3)
+            {
                 if (config->getValue (Ids::postbuildCommand).toString().isEmpty())
-                    config->getValue (Ids::postbuildCommand) = "copy /Y \"$(OutDir)\\$(TargetFileName)\" \"$(OutDir)\\$(TargetName).vst3\"";
+                {
+                    const String previousBuildCommands = config->getValue (Ids::internalPostBuildComamnd).toString();
+
+                    String script;
+                    if (previousBuildCommands.isNotEmpty())
+                        script += "\r\n";
+
+                    script += "copy /Y \"$(OutDir)$(TargetFileName)\" \"$(OutDir)$(TargetName).vst3\"";
+
+                    config->getValue (Ids::internalPostBuildComamnd) = previousBuildCommands + script;
+                }
+            }
         }
     }
 
@@ -175,8 +187,47 @@ private:
         const RelativePath aaxLibsFolder = RelativePath (getAAXPathValue().toString(), RelativePath::projectFolder).getChildFile ("Libs");
 
         for (ProjectExporter::ConfigIterator config (*this); config.next();)
+        {
             if (config->getValue (Ids::useRuntimeLibDLL).getValue().isVoid())
                 config->getValue (Ids::useRuntimeLibDLL) = true;
+
+            if (config->getValue(Ids::postbuildCommand).toString().isEmpty())
+            {
+                const String previousBuildCommands = config->getValue (Ids::internalPostBuildComamnd).toString();
+                const String aaxSDKPath = File::isAbsolutePath(aaxPath.toString())
+                                                          ? aaxPath.toString()
+                                                          : String ("..\\..\\") + aaxPath.toString();
+
+                const bool is64Bit = (config->getValue (Ids::winArchitecture) == "x64");
+                const String bundleDir      = "$(OutDir)$(TargetName).aaxplugin";
+                const String bundleContents = bundleDir + "\\Contents";
+                const String macOSDir       = bundleContents + String ("\\") + (is64Bit ? "x64" : "Win32");
+                const String executable     = macOSDir + String ("\\$(TargetName).aaxplugin");
+                const String bundleScript   = aaxSDKPath + String ("\\Utilities\\CreatePackage.bat");
+                String iconFilePath         = getTargetFolder().getChildFile ("icon.ico").getFullPathName();
+
+                if (! File (iconFilePath).existsAsFile())
+                    iconFilePath = aaxSDKPath + String ("\\Utilities\\PlugIn.ico");
+
+                String script;
+
+                if (previousBuildCommands.isNotEmpty())
+                    script += "\r\n";
+
+                StringArray folders;
+                folders.add (bundleDir);
+                folders.add (bundleContents);
+                folders.add (macOSDir);
+
+                for (int i = 0; i < folders.size(); ++i)
+                    script += String ("if not exist \"") + folders[i] + String ("\" mkdir \"") + folders[i] + String ("\"\r\n");
+
+                script += String ("copy /Y \"$(OutDir)$(TargetFileName)\" \"") + executable + String ("\"\r\n");
+                script += String ("\"") + bundleScript + String ("\" \"") + macOSDir + String ("\" \"") + iconFilePath + String ("\"");
+
+                config->getValue (Ids::internalPostBuildComamnd) = previousBuildCommands + script;
+            }
+        }
 
         msvcExtraPreprocessorDefs.set ("JucePlugin_AAXLibs_path",
                                        createRebasedPath (aaxLibsFolder));
@@ -210,10 +261,19 @@ private:
                 config->getValue (Ids::useRuntimeLibDLL) = true;
 
             if (config->getValue (Ids::postbuildCommand).toString().isEmpty())
-                config->getValue (Ids::postbuildCommand)
-                = "copy /Y "
-                + modulePath.getChildFile ("juce_RTAS_WinResources.rsr").toWindowsStyle().quoted()
-                + " \"$(TargetPath)\".rsr";
+            {
+                const String previousBuildCommands = config->getValue (Ids::internalPostBuildComamnd).toString();
+
+                String script;
+                if (previousBuildCommands.isNotEmpty())
+                    script += "\r\n";
+
+                script += "copy /Y "
+                       + modulePath.getChildFile("juce_RTAS_WinResources.rsr").toWindowsStyle().quoted()
+                       + " \"$(TargetPath)\".rsr";
+
+                config->getValue (Ids::internalPostBuildComamnd) = previousBuildCommands + script;
+            }
         }
 
         RelativePath juceWrapperFolder (project.getGeneratedCodeFolder(),
@@ -329,11 +389,16 @@ protected:
         Value getPostbuildCommand()                 { return getValue (Ids::postbuildCommand); }
         String getPostbuildCommandString() const    { return config [Ids::postbuildCommand]; }
 
+        Value getInternalPostbuildCommands()        { return getValue (Ids::internalPostBuildComamnd); }
+
         Value shouldGenerateDebugSymbolsValue()     { return getValue (Ids::alwaysGenerateDebugSymbols); }
         bool shouldGenerateDebugSymbols() const     { return config [Ids::alwaysGenerateDebugSymbols]; }
 
         Value shouldGenerateManifestValue()         { return getValue (Ids::generateManifest); }
         bool shouldGenerateManifest() const         { return config [Ids::generateManifest]; }
+
+        Value shouldLinkIncrementalValue()          { return getValue (Ids::enableIncrementalLinking); }
+        bool shouldLinkIncremental() const          { return config [Ids::enableIncrementalLinking]; }
 
         Value getWholeProgramOptValue()             { return getValue (Ids::wholeProgramOptimisation); }
         bool shouldDisableWholeProgramOpt() const   { return static_cast<int> (config [Ids::wholeProgramOptimisation]) > 0; }
@@ -399,6 +464,12 @@ protected:
                                                         StringArray (wpoNames), Array<var> (wpoValues, numElementsInArray (wpoValues))));
             }
 
+            {
+                props.add (new BooleanPropertyComponent (shouldLinkIncrementalValue(), "Incremental Linking", "Enable"),
+                           "Enable to avoid linking from scratch for every new build. "
+                           "Disable to ensure that your final release build does not contain padding or thunks.");
+            }
+
             if (! isDebug())
                 props.add (new BooleanPropertyComponent (shouldGenerateDebugSymbolsValue(), "Debug Symbols", "Force generation of debug symbols"));
 
@@ -408,7 +479,7 @@ protected:
 
             {
                 static const char* characterSetNames[] = { "Default", "MultiByte", "Unicode", nullptr };
-                const var charSets[]                   = { var::null, "MultiByte", "Unicode", };
+                const var charSets[]                   = { var(),     "MultiByte", "Unicode", };
 
                 props.add (new ChoicePropertyComponent (getCharacterSetValue(), "Character Set",
                                                         StringArray (characterSetNames), Array<var> (charSets, numElementsInArray (charSets))));
@@ -704,7 +775,7 @@ protected:
            << newLine
            << "#endif" << newLine;
 
-        if (iconFile != File::nonexistent)
+        if (iconFile != File())
            mo << newLine
               << "IDI_ICON1 ICON DISCARDABLE " << iconFile.getFileName().quoted()
               << newLine
@@ -740,10 +811,6 @@ protected:
 
     void initialiseDependencyPathValues()
     {
-        vst2Path.referTo (Value (new DependencyPathValueSource (getSetting (Ids::vstFolder),
-                                                                Ids::vst2Path,
-                                                                TargetOS::windows)));
-
         vst3Path.referTo (Value (new DependencyPathValueSource (getSetting (Ids::vst3Folder),
                                                                 Ids::vst3Path,
                                                                 TargetOS::windows)));
@@ -803,7 +870,7 @@ public:
 
                 if (group.getID() == ProjectSaver::getGeneratedGroupID())
                 {
-                    if (iconFile != File::nonexistent)
+                    if (iconFile != File())
                     {
                         group.addFileAtIndex (iconFile, -1, true);
                         group.findItemForFile (iconFile).getShouldAddToBinaryResourcesValue() = false;
@@ -825,7 +892,7 @@ public:
 
         {
             MemoryOutputStream mo;
-            writeSolutionFile (mo, getSolutionVersionString(), String::empty, getVCProjFile());
+            writeSolutionFile (mo, getSolutionVersionString(), String(), getVCProjFile());
 
             overwriteFileIfDifferentOrThrow (getSLNFile(), mo);
         }
@@ -1026,6 +1093,7 @@ protected:
 
             linker->setAttribute ("IgnoreDefaultLibraryNames", isDebug ? "libcmt.lib, msvcrt.lib" : "");
             linker->setAttribute ("GenerateDebugInformation", (isDebug || config.shouldGenerateDebugSymbols()) ? "true" : "false");
+            linker->setAttribute ("LinkIncremental", config.shouldLinkIncremental() ? "2" : "1");
             linker->setAttribute ("ProgramDatabaseFile", getIntDirFile (config, config.getOutputFilename (".pdb", true)));
             linker->setAttribute ("SubSystem", msvcIsWindowsSubsystem ? "2" : "1");
 
@@ -1073,6 +1141,8 @@ protected:
 
                 linker->setAttribute ("OutputFile", getOutDirFile (config, config.getOutputFilename (msvcTargetSuffix, false)));
                 linker->setAttribute ("IgnoreDefaultLibraryNames", isDebug ? "libcmt.lib, msvcrt.lib" : "");
+
+                linker->setAttribute ("LinkIncremental", config.shouldLinkIncremental() ? "2" : "1");
             }
             else
             {
@@ -1370,6 +1440,9 @@ protected:
             if (! (config.isDebug() || config.shouldDisableWholeProgramOpt()))
                 e->createNewChildElement ("WholeProgramOptimization")->addTextElement ("true");
 
+            if (config.shouldLinkIncremental())
+                e->createNewChildElement ("LinkIncremental")->addTextElement ("true");
+
             if (config.is64Bit())
                 e->createNewChildElement ("PlatformToolset")->addTextElement (getPlatformToolset());
         }
@@ -1417,13 +1490,18 @@ protected:
                 {
                     XmlElement* intdir = props->createNewChildElement ("IntDir");
                     setConditionAttribute (*intdir, config);
-                    intdir->addTextElement (FileHelpers::windowsStylePath (config.getIntermediatesPath()) + "\\");
+
+                    String intermediatesPath = config.getIntermediatesPath();
+                    if (! intermediatesPath.endsWith ("\\"))
+                        intermediatesPath << "\\";
+
+                    intdir->addTextElement (FileHelpers::windowsStylePath (intermediatesPath));
                 }
 
                 {
                     XmlElement* targetName = props->createNewChildElement ("TargetName");
                     setConditionAttribute (*targetName, config);
-                    targetName->addTextElement (config.getOutputFilename (String::empty, true));
+                    targetName->addTextElement (config.getOutputFilename (String(), true));
                 }
 
                 {
@@ -1568,10 +1646,11 @@ protected:
                      ->createNewChildElement ("Command")
                      ->addTextElement (config.getPrebuildCommandString());
 
-            if (config.getPostbuildCommandString().isNotEmpty())
+            const String internalPostBuildScripts = config.config[Ids::internalPostBuildComamnd].toString();
+            if (config.getPostbuildCommandString().isNotEmpty() || internalPostBuildScripts.isNotEmpty())
                 group->createNewChildElement ("PostBuildEvent")
                      ->createNewChildElement ("Command")
-                     ->addTextElement (config.getPostbuildCommandString());
+                     ->addTextElement (config.getPostbuildCommandString() + internalPostBuildScripts);
         }
 
         ScopedPointer<XmlElement> otherFilesGroup (new XmlElement ("ItemGroup"));
@@ -1589,7 +1668,7 @@ protected:
             }
         }
 
-        if (iconFile != File::nonexistent)
+        if (iconFile != File())
         {
             XmlElement* e = otherFilesGroup->createNewChildElement ("None");
             e->setAttribute ("Include", prependDot (iconFile.getFileName()));
@@ -1623,7 +1702,7 @@ protected:
         if (projectType.isStaticLibrary())                                      return "StaticLibrary";
 
         jassertfalse;
-        return String::empty;
+        return String();
     }
 
     static const char* getOptimisationLevelString (int level)
@@ -1650,7 +1729,7 @@ protected:
 
             jassert (path.getRoot() == RelativePath::buildTargetFolder);
 
-            if (path.hasFileExtension (cOrCppFileExtensions))
+            if (path.hasFileExtension (cOrCppFileExtensions) || path.hasFileExtension (asmFileExtensions))
             {
                 XmlElement* e = cpps.createNewChildElement ("ClCompile");
                 e->setAttribute ("Include", path.toWindowsStyle());
@@ -1706,7 +1785,7 @@ protected:
 
             for (int i = 0; i < projectItem.getNumChildren(); ++i)
                 addFilesToFilter (projectItem.getChild(i),
-                                  (path.isEmpty() ? String::empty : (path + "\\")) + projectItem.getChild(i).getName(),
+                                  (path.isEmpty() ? String() : (path + "\\")) + projectItem.getChild(i).getName(),
                                   cpps, headers, otherFiles, groups);
         }
         else if (projectItem.shouldBeAddedToTargetProject())
