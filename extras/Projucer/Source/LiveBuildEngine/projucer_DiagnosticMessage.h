@@ -63,6 +63,24 @@ struct DiagnosticMessage
     bool isWarning() const noexcept     { return type == warning; }
     bool isNote() const noexcept        { return type == note; }
 
+    String toString() const
+    {
+        // todo: copy recursively from root
+        String res;
+
+        switch (type)
+        {
+            case error:   res << "error: "; break;
+            case warning: res << "warning: "; break;
+            case note:    res << "note: "; break;
+        };
+
+        res << mainFile << ": ";
+        res << message << "\n";
+
+        return res;
+    }
+
     ValueTree toValueTree() const
     {
         ValueTree v (MessageTypes::DIAGNOSTIC);
@@ -100,14 +118,6 @@ struct DiagnosticMessage
     }
 
     bool operator!= (const DiagnosticMessage& other) const noexcept    { return ! operator== (other); }
-};
-
-//==============================================================================
-struct DiagnosticReceiver
-{
-    virtual ~DiagnosticReceiver() {}
-    virtual void handleDiagnostic (const DiagnosticMessage&) = 0;
-    virtual void handleRecoverableErrorPCH (const DiagnosticMessage& m, String pchFileName, String sourceFileName) = 0;
 };
 
 //==============================================================================

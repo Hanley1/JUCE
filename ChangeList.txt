@@ -4,6 +4,34 @@
 This file just lists the more notable headline features. For more detailed info
 about minor changes and bugfixes, please see the git log!
 
+Version 4.3.1
+  - Added support for iOS download tasks
+  - Added support for AAX plug-in meters
+  - Added support for dynamically disabling/enabling sidechains in ProTools
+  - Re-introduced support for VST3 plug-ins reporting which VST2 plug-in they can replace
+  - Added withRightX and withBottomY methods to Rectangle
+  - Added support for windows 10 on screen keyboard
+  - Added move semantics to AudioBuffer
+  - Added colour coding scheme to module icons in the Projucer to indicate which type of license a module uses
+  - Removed all deprecation warnings for macOS Sierra
+  - Fixed multiple touch, pen and mouse input related bugs on Windows
+  - Added submenu support to ComboBoxes and simplified the usage of ComboBoxes
+  - Various minor improvements and bug fixes
+  - Various documentation improvements
+
+Version 4.3.0
+  - Added API and examples for ROLI Blocks
+  - Multiple Projucer live-build UI and diagnostics improvements
+  - JUCE now supports hosting multi-bus plug-ins
+  - BufferingAudioSource now supports pre-buffering (useful for offline processing)
+  - Added microphone permissions switch to Projucer for iOS targets
+  - Standalone wrappers now correctly save and restore midi settings
+  - Various performance improvements to BigInteger
+  - Fixed various FlexBox bugs
+  - Added a workaround for the broken “Open Recent…” menu on os x
+  - Various minor improvements and bug fixes
+  - Various documentation improvements
+
 Version 4.2.4
   - Pre-release of live build engine on Windows
   - Added FlexBox layout engine

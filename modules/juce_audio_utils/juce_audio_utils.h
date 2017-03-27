@@ -33,13 +33,14 @@
 
   ID:               juce_audio_utils
   vendor:           juce
-  version:          4.2.4
+  version:          4.3.1
   name:             JUCE extra audio utility classes
   description:      Classes for audio-related GUI and miscellaneous tasks.
   website:          http://www.juce.com/juce
   license:          GPL/Commercial
 
   dependencies:     juce_gui_extra, juce_audio_basics, juce_audio_processors, juce_audio_formats
+  OSXFrameworks:    DiscRecording
   iOSFrameworks:    CoreAudioKit
 
  END_JUCE_MODULE_DECLARATION
