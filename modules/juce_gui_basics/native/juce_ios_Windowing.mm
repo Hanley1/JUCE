@@ -44,7 +44,7 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
 @property (strong, nonatomic) UIWindow *window;
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions ;
-- (void) applicationDidFinishLaunching: (UIApplication*) application;
+//- (void) applicationDidFinishLaunching: (UIApplication*) application;
 - (BOOL) application:(UIApplication*)app openURL:(NSURL*)url sourceApplication:(NSString*)source annotation:(id)annotation;
 - (void) applicationWillTerminate: (UIApplication*) application;
 - (void) applicationDidEnterBackground: (UIApplication*) application;
@@ -59,7 +59,7 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     
-    [DBClientsManager setupWithAppKey:@"x2twb5hsqqxbb6r"];
+    [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
     
     ignoreUnused (application);
     initialiseJuce_GUI();
@@ -93,6 +93,16 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
         if (!success)
             NSLog(@"KCDM: Error excluding %@ from backup %@", resourcesFolder, error);
         
+        // register to observe notifications from the icloud key-value store
+        [[NSNotificationCenter defaultCenter]
+            addObserver: self
+            selector: @selector (handleChangesFromiCloud:)
+            name: NSUbiquitousKeyValueStoreDidChangeExternallyNotification
+            object: [NSUbiquitousKeyValueStore defaultStore]];
+        
+        // get changes that might have happened while this instance of your app wasn't running
+        [[NSUbiquitousKeyValueStore defaultStore] synchronize];
+        
         if (! app->initialiseApp())
             exit (app->shutdownApp());
     }
@@ -102,6 +112,41 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
     }
     
     return YES;
+}
+
+- (void) handleChangesFromiCloud: (NSNotification *) notification
+{
+    NSLog(@"icloud change");
+    
+    NSDictionary * userInfo = [notification userInfo];
+    NSInteger reason = [[userInfo objectForKey:NSUbiquitousKeyValueStoreChangeReasonKey] integerValue];
+    // 4 reasons:
+    switch (reason) {
+        case NSUbiquitousKeyValueStoreServerChange:
+            NSLog(@"Updated values");
+            // Updated values
+            break;
+        case NSUbiquitousKeyValueStoreInitialSyncChange:
+            NSLog(@"First launch");
+            // First launch
+            break;
+        case NSUbiquitousKeyValueStoreQuotaViolationChange:
+            NSLog(@"no free space");
+            // No free space
+            break;
+        case NSUbiquitousKeyValueStoreAccountChange:
+            NSLog(@"iCloud account changed");
+            // iCloud account changed
+            break;
+        default:
+            break;
+    }
+    
+    NSArray * keys = [userInfo objectForKey:NSUbiquitousKeyValueStoreChangedKeysKey];
+    for (NSString * key in keys)
+    {
+        NSLog(@"Value for key %@ changed", key);
+    }
 }
 
 //- (void) applicationDidFinishLaunching: (UIApplication*) application
@@ -223,7 +268,7 @@ int juce_iOSMain (int argc, const char* argv[], void* customDelgatePtr);
 int juce_iOSMain (int argc, const char* argv[], void* customDelagetPtr)
 {
     Class delegateClass = (customDelagetPtr != nullptr ? reinterpret_cast<Class> (customDelagetPtr) : [JuceAppStartupDelegate class]);
-
+    
     return UIApplicationMain (argc, const_cast<char**> (argv), nil, NSStringFromClass (delegateClass));
 }
 
