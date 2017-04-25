@@ -598,6 +598,7 @@ UIViewComponentPeer::UIViewComponentPeer (Component& comp, const int windowStyle
 
         controller = [[JuceUIViewController alloc] init];
         controller.view = view;
+        [controller viewDidLoad];
         window.rootViewController = controller;
 
         window.hidden = true;

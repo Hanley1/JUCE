@@ -116,26 +116,20 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 
 - (void) handleChangesFromiCloud: (NSNotification *) notification
 {
-    NSLog(@"icloud change");
-    
     NSDictionary * userInfo = [notification userInfo];
     NSInteger reason = [[userInfo objectForKey:NSUbiquitousKeyValueStoreChangeReasonKey] integerValue];
     // 4 reasons:
     switch (reason) {
         case NSUbiquitousKeyValueStoreServerChange:
-            NSLog(@"Updated values");
             // Updated values
             break;
         case NSUbiquitousKeyValueStoreInitialSyncChange:
-            NSLog(@"First launch");
             // First launch
             break;
         case NSUbiquitousKeyValueStoreQuotaViolationChange:
-            NSLog(@"no free space");
             // No free space
             break;
         case NSUbiquitousKeyValueStoreAccountChange:
-            NSLog(@"iCloud account changed");
             // iCloud account changed
             break;
         default:
@@ -145,7 +139,7 @@ Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
     NSArray * keys = [userInfo objectForKey:NSUbiquitousKeyValueStoreChangedKeysKey];
     for (NSString * key in keys)
     {
-        NSLog(@"Value for key %@ changed", key);
+//        NSLog(@"Value for key %@ changed", key);
     }
 }
 
