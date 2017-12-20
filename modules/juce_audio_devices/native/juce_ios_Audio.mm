@@ -812,7 +812,7 @@ namespace juce {
                 if (result == noErr)
                     tempo = outCurrentTempo;
                 else
-                    NSLog(@"Error occured fetching callBackInfo->beatAndTempoProc : %d", (int)result);
+                    NSLog(@"getTempo Error occured fetching callBackInfo->beatAndTempoProc : %d", (int)result);
             }
         }
         
@@ -856,7 +856,7 @@ namespace juce {
                         *ppqPosition = outCurrentBeat;
                     }
                     else
-                        NSLog(@"Error occured fetching callBackInfo->beatAndTempoProc : %d", (int)result);
+                        NSLog(@"getPlayhead Error occured fetching callBackInfo->beatAndTempoProc : %d", (int)result);
                     
                 }
                 else
@@ -1054,20 +1054,31 @@ namespace juce {
     
     void iOSAudioIODevice::setAudioUnitCallback(bool isEnabled)
     {
-        AURenderCallbackStruct inputProc;
-        
-        if (isEnabled)
-        {
-            inputProc.inputProc = processStatic;
-            inputProc.inputProcRefCon = this;
-        }
-        else
-        {
-            inputProc.inputProc = nullptr;
-            inputProc.inputProcRefCon = nullptr;
-        }
-        
-        AudioUnitSetProperty (audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &inputProc, sizeof (inputProc));
+//        AURenderCallbackStruct inputProc;
+//        
+//        if (isEnabled)
+//        {
+//            inputProc.inputProc = processStatic;
+//            inputProc.inputProcRefCon = this;
+//        }
+//        else
+//        {
+//            inputProc.inputProc = nullptr;
+//            inputProc.inputProcRefCon = nullptr;
+//        }
+//        
+//        AudioUnitSetProperty (audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &inputProc, sizeof (inputProc));
+//        
+//        AudioOutputUnitMIDICallbacks callBackStruct;
+//        callBackStruct.userData = inUserData;
+//        callBackStruct.MIDIEventProc = MIDIEventProcCallBack;
+//        callBackStruct.MIDISysExProc = NULL;
+//        Check(AudioUnitSetProperty (*output,
+//                                    kAudioOutputUnitProperty_MIDICallbacks,
+//                                    kAudioUnitScope_Global,
+//                                    0,
+//                                    &callBackStruct,
+//                                    sizeof(callBackStruct)));
     }
     
     void iOSAudioIODevice::interruptionListener (const UInt32 interruptionType)
