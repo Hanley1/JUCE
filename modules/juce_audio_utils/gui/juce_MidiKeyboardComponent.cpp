@@ -33,6 +33,7 @@ static const uint8 blackNotes[] = { 1, 3, 6, 8, 10 };
 
 struct MidiKeyboardComponent::UpDownButton  : public Button
 {
+public:
     UpDownButton (MidiKeyboardComponent& c, int d)
         : Button ({}), owner (c), delta (d)
     {
