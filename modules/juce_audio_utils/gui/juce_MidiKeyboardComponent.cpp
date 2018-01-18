@@ -213,16 +213,19 @@ Range<float> MidiKeyboardComponent::getKeyPosition (float midiNoteNumber, const 
     const int octave = (int) noteDivOctave;
     const float noteFloat = 12.0 * (float)(noteDivOctave - octave);
     
-    int note = (int)noteFloat;
+//    int note = (int)noteFloat;
+//    float noteRemainder = noteFloat - (float)note;
+//    float noteForX = notePos[note] + noteRemainder * (notePos[note + 1] - notePos[note]);
+    
+    auto note = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
     float noteRemainder = noteFloat - (float)note;
     float noteForX = notePos[note] + noteRemainder * (notePos[note + 1] - notePos[note]);
-    
     auto start = roundToInt (octave * 7.0f * keyWidth_ + noteForX * keyWidth_);
-    auto note = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
+    
 //    x = roundToInt (octave * 7.0f * keyWidth_ + noteForX * keyWidth_);
 //    w = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
     
-    return { start, note};
+    return { float(start), float(note)};
 }
 
 Range<float> MidiKeyboardComponent::getKeyPos (float midiNoteNumber) const
@@ -698,9 +701,8 @@ void MidiKeyboardComponent::resized()
 //            xOffset = newOffset;
             xOffset = getKeyPos (firstKey).getStart();
 #else
-//            getKeyPos ((int) firstKey, newOffset, kw);
             xOffset = getKeyPos ((int) firstKey).getStart();
-            xOffset = newOffset - scrollButtonW; // this fixes the uneven alignment introduced in a previous JUCE update
+            xOffset = xOffset - scrollButtonW; // this fixes the uneven alignment introduced in a previous JUCE update
 #endif
         }
         else
