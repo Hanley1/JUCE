@@ -90,6 +90,8 @@ namespace juce
 
 @implementation JuceAppStartupDelegate
 
+    NSObject* _pushNotificationsDelegate;
+
 - (id)init
 {
     self = [super init];

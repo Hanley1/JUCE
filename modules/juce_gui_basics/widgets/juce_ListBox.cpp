@@ -24,6 +24,9 @@
   ==============================================================================
 */
 
+namespace juce
+{
+
 #if JUCE_IOS
 #define TimerInterval 10
 
@@ -41,7 +44,7 @@ public:
     currentVerticalDistance(0),
     highestPixelsPerInterval(0)
     {
-        getVerticalScrollBar()->setAlpha(0.7);
+        getVerticalScrollBar().setAlpha(0.7);
         setScrollBarsShown(false, false);
     }
     
@@ -49,7 +52,7 @@ public:
     {
         stopTimer(FadeScrollbar);
         stopTimer(AutoScroll);
-        getVerticalScrollBar()->setAlpha(0.7);
+        getVerticalScrollBar().setAlpha(0.7);
         resetDragStats(event);
     }
     
@@ -128,8 +131,8 @@ public:
         }
         else if (timerId == FadeScrollbar)
         {
-            float alpha = getVerticalScrollBar()->getAlpha();
-            getVerticalScrollBar()->setAlpha(alpha - 0.02);
+            float alpha = getVerticalScrollBar().getAlpha();
+            getVerticalScrollBar().setAlpha(alpha - 0.02);
             
             if (alpha < 0.01)
             {
@@ -148,9 +151,6 @@ private:
     enum TimerIDs {AutoScroll, FadeScrollbar};
 };
 #endif
-
-namespace juce
-{
 
 class ListBox::RowComponent  : public Component,
                                public TooltipClient
