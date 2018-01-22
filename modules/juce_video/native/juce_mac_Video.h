@@ -37,6 +37,8 @@ struct VideoComponent::Pimpl   : public BaseClass
        #if JUCE_MAC && JUCE_32BIT
         auto view = [[NSView alloc] init];  // 32-bit builds don't have AVPlayerView, so need to use a layer
         controller = [[AVPlayerLayer alloc] init];
+        // pch 1/15/18 gets rid of internal slider on videos
+        controller.controlsStyle = AVPlayerViewControlsStyleNone;
         setView (view);
         [view setNextResponder: [view superview]];
         [view setWantsLayer: YES];
@@ -46,12 +48,13 @@ struct VideoComponent::Pimpl   : public BaseClass
         controller = [[AVPlayerView alloc] init];
         // pch 1/15/18 gets rid of internal slider on videos
         controller.controlsStyle = AVPlayerViewControlsStyleNone;
-        
         setView (controller);
         [controller setNextResponder: [controller superview]];
         [controller setWantsLayer: YES];
        #else
         controller = [[AVPlayerViewController alloc] init];
+        // pch 1/15/18 gets rid of internal slider on videos
+        controller.showsPlaybackControls = false;
         setView ([controller view]);
        #endif
     }
