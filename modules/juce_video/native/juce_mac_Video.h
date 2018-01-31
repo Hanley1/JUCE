@@ -38,7 +38,7 @@ struct VideoComponent::Pimpl   : public BaseClass
         auto view = [[NSView alloc] init];  // 32-bit builds don't have AVPlayerView, so need to use a layer
         controller = [[AVPlayerLayer alloc] init];
         // pch 1/15/18 gets rid of internal slider on videos
-        controller.controlsStyle = AVPlayerViewControlsStyleNone;
+//        controller.controlsStyle = AVPlayerViewControlsStyleNone;
         setView (view);
         [view setNextResponder: [view superview]];
         [view setWantsLayer: YES];
