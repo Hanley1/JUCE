@@ -472,9 +472,6 @@
     <ClCompile Include="..\..\Source\Utility\UI\PropertyComponents\jucer_DependencyPathPropertyComponent.cpp">
       <Filter>Projucer\Utility\UI\PropertyComponents</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Utility\UI\PropertyComponents\jucer_TextWithDefaultPropertyComponentWithEnablement.cpp">
-      <Filter>Projucer\Utility\UI\PropertyComponents</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\Utility\UI\jucer_Icons.cpp">
       <Filter>Projucer\Utility\UI</Filter>
     </ClCompile>
@@ -1815,6 +1812,18 @@
     <ClInclude Include="..\..\Source\Application\jucer_MainWindow.h">
       <Filter>Projucer\Application</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_AnimatedComponentSimpleTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_AnimatedComponentTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_AudioComponentSimpleTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_AudioComponentTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_AudioPluginEditorTemplate.h">
       <Filter>Projucer\BinaryData\Templates</Filter>
     </ClInclude>
@@ -1822,6 +1831,9 @@
       <Filter>Projucer\BinaryData\Templates</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_ComponentTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_ContentCompSimpleTemplate.h">
       <Filter>Projucer\BinaryData\Templates</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_ContentCompTemplate.h">
@@ -1837,6 +1849,12 @@
       <Filter>Projucer\BinaryData\Templates</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_NewInlineComponentTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_OpenGLComponentSimpleTemplate.h">
+      <Filter>Projucer\BinaryData\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\BinaryData\Templates\jucer_OpenGLComponentTemplate.h">
       <Filter>Projucer\BinaryData\Templates</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\CodeEditor\jucer_DocumentEditorComponent.h">
@@ -2223,10 +2241,7 @@
     <ClInclude Include="..\..\Source\Utility\UI\PropertyComponents\jucer_FilePathPropertyComponent.h">
       <Filter>Projucer\Utility\UI\PropertyComponents</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\Utility\UI\PropertyComponents\jucer_TextWithDefaultPropertyComponent.h">
-      <Filter>Projucer\Utility\UI\PropertyComponents</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Source\Utility\UI\PropertyComponents\jucer_TextWithDefaultPropertyComponentWithEnablement.h">
+    <ClInclude Include="..\..\Source\Utility\UI\PropertyComponents\jucer_PropertyComponentsWithEnablement.h">
       <Filter>Projucer\Utility\UI\PropertyComponents</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\Utility\UI\jucer_IconButton.h">
@@ -2730,6 +2745,9 @@
     <ClInclude Include="..\..\..\..\modules\juce_data_structures\values\juce_ValueTreeSynchroniser.h">
       <Filter>JUCE Modules\juce_data_structures\values</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_data_structures\values\juce_ValueWithDefault.h">
+      <Filter>JUCE Modules\juce_data_structures\values</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_data_structures\juce_data_structures.h">
       <Filter>JUCE Modules\juce_data_structures</Filter>
     </ClInclude>
@@ -2869,6 +2887,9 @@
       <Filter>JUCE Modules\juce_graphics\geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\geometry\juce_Line.h">
+      <Filter>JUCE Modules\juce_graphics\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_graphics\geometry\juce_Parallelogram.h">
       <Filter>JUCE Modules\juce_graphics\geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_graphics\geometry\juce_Path.h">

@@ -80,7 +80,7 @@ public:
         if (object != objectToTransferFrom.object)
         {
             reset();
-            object = objectToTransferFrom.object;
+            object.reset (objectToTransferFrom.object.release());
         }
 
         shouldDelete = objectToTransferFrom.shouldDelete;
@@ -101,7 +101,7 @@ public:
     inline operator ObjectType*() const noexcept                    { return object.get(); }
 
     /** Returns the object that this pointer is managing. */
-    inline ObjectType* get() const noexcept                         { return object; }
+    inline ObjectType* get() const noexcept                         { return object.get(); }
 
     /** Returns the object that this pointer is managing. */
     inline ObjectType& operator*() const noexcept                   { return *object; }
@@ -136,10 +136,10 @@ public:
     */
     void set (ObjectType* newObject, bool takeOwnership)
     {
-        if (object != newObject)
+        if (object.get() != newObject)
         {
             reset();
-            object = newObject;
+            object.reset (newObject);
         }
 
         shouldDelete = takeOwnership;
@@ -181,7 +181,7 @@ private:
     // a scoped pointer, which is almost certainly not what you intended to do!
     // If you hit a problem with this, you probably meant to say
     //  myPointer.setOwned (myScopedPointer.release())
-    void setOwned (const ScopedPointer<ObjectType>&) JUCE_DELETED_FUNCTION;
+    void setOwned (const ScopedPointer<ObjectType>&) = delete;
 };
 
 } // namespace juce

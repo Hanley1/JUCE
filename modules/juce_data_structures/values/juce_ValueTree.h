@@ -80,10 +80,56 @@ public:
     ValueTree() noexcept;
 
     /** Creates an empty ValueTree with the given type name.
+
         Like an XmlElement, each ValueTree has a type, which you can access with
         getType() and hasType().
     */
     explicit ValueTree (const Identifier& type);
+
+   #if JUCE_COMPILER_SUPPORTS_INITIALIZER_LISTS
+    /** Creates a value tree from nested lists of properties and ValueTrees.
+
+        This code,
+
+        @code
+        ValueTree groups
+        { "ParameterGroups", {},
+          {
+            { "Group", {{ "name", "Tone Controls" }},
+              {
+                { "Parameter", {{ "id", "distortion" }, { "value", 0.5 }}},
+                { "Parameter", {{ "id", "reverb" },     { "value", 0.5 }}}
+              }
+            },
+            { "Group", {{ "name", "Other Controls" }},
+              {
+                { "Parameter", {{ "id", "drywet" }, { "value", 0.5 }}},
+                { "Parameter", {{ "id", "gain" },   { "value", 0.5 }}}
+              }
+            }
+          }
+        };
+        @endcode
+
+        produces this tree:
+
+        @verbatim
+        <ParameterGroups>
+          <Group name="Tone Controls">
+            <Parameter id="distortion" value="0.5"/>
+            <Parameter id="reverb" value="0.5"/>
+          </Group>
+          <Group name="Other Controls">
+            <Parameter id="drywet" value="0.5"/>
+            <Parameter id="gain" value="0.5"/>
+          </Group>
+        </ParameterGroups>
+        @endverbatim
+    */
+    ValueTree (const Identifier& type,
+               std::initializer_list<std::pair<Identifier, var>> properties,
+               std::initializer_list<ValueTree> subTrees = {});
+   #endif
 
     /** Creates a reference to another ValueTree. */
     ValueTree (const ValueTree&) noexcept;
@@ -348,6 +394,12 @@ public:
         bool operator!= (const Iterator&) const noexcept;
         ValueTree operator*() const;
 
+        using difference_type    = std::ptrdiff_t;
+        using value_type         = ValueTree;
+        using reference          = ValueTree&;
+        using pointer            = ValueTree*;
+        using iterator_category  = std::forward_iterator_tag;
+
     private:
         void* internal;
     };
@@ -532,18 +584,17 @@ public:
         }
     }
 
-   #if JUCE_ALLOW_STATIC_NULL_VARIABLES
-    /** An invalid ValueTree that can be used if you need to return one as an error condition, etc.
-        This invalid object is equivalent to ValueTree created with its default constructor, but
-        you should always prefer to avoid it and use ValueTree() or {} instead.
-    */
-    static const ValueTree invalid;
-   #endif
-
     /** Returns the total number of references to the shared underlying data structure that this
         ValueTree is using.
     */
     int getReferenceCount() const noexcept;
+
+   #if JUCE_ALLOW_STATIC_NULL_VARIABLES
+    /** An invalid ValueTree that can be used if you need to return one as an error condition, etc.
+        @deprecated If you need an empty ValueTree object, just use ValueTree() or {}.
+    */
+    static const ValueTree invalid;
+   #endif
 
 private:
     //==============================================================================

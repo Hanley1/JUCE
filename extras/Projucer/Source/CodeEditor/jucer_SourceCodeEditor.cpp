@@ -38,7 +38,7 @@ CodeDocument& SourceCodeDocument::getCodeDocument()
 {
     if (codeDoc == nullptr)
     {
-        codeDoc = new CodeDocument();
+        codeDoc.reset (new CodeDocument());
         reloadInternal();
         codeDoc->clearUndoHistory();
     }
@@ -48,7 +48,7 @@ CodeDocument& SourceCodeDocument::getCodeDocument()
 
 Component* SourceCodeDocument::createEditor()
 {
-    SourceCodeEditor* e = new SourceCodeEditor (this, getCodeDocument());
+    auto* e = new SourceCodeEditor (this, getCodeDocument());
     applyLastState (*(e->editor));
     return e;
 }
@@ -105,7 +105,7 @@ bool SourceCodeDocument::saveAs()
 
 void SourceCodeDocument::updateLastState (CodeEditorComponent& editor)
 {
-    lastState = new CodeEditorComponent::State (editor);
+    lastState.reset (new CodeEditorComponent::State (editor));
 }
 
 void SourceCodeDocument::applyLastState (CodeEditorComponent& editor) const
@@ -169,7 +169,8 @@ void SourceCodeEditor::setEditor (GenericCodeEditorComponent* newEditor)
     if (editor != nullptr)
         editor->getDocument().removeListener (this);
 
-    addAndMakeVisible (editor = newEditor);
+    editor.reset (newEditor);
+    addAndMakeVisible (newEditor);
 
     editor->setFont (AppearanceSettings::getDefaultCodeFont());
     editor->setTabSize (4, true);
@@ -343,9 +344,7 @@ void GenericCodeEditorComponent::removeListener (GenericCodeEditorComponent::Lis
 }
 
 //==============================================================================
-class GenericCodeEditorComponent::FindPanel  : public Component,
-                                               private TextEditor::Listener,
-                                               private Button::Listener
+class GenericCodeEditorComponent::FindPanel  : public Component
 {
 public:
     FindPanel()
@@ -363,7 +362,7 @@ public:
         addAndMakeVisible (caseButton);
         caseButton.setColour (ToggleButton::textColourId, Colours::white);
         caseButton.setToggleState (isCaseSensitiveSearch(), dontSendNotification);
-        caseButton.addListener (this);
+        caseButton.onClick = [this] { setCaseSensitiveSearch (caseButton.getToggleState()); };
 
         findPrev.setConnectedEdges (Button::ConnectedOnRight);
         findNext.setConnectedEdges (Button::ConnectedOnLeft);
@@ -376,7 +375,13 @@ public:
         findNext.setWantsKeyboardFocus (false);
 
         editor.setText (getSearchString());
-        editor.addListener (this);
+        editor.onTextChange = [this] { changeSearchString(); };
+        editor.onReturnKey  = [this] { ProjucerApplication::getCommandManager().invokeDirectly (CommandIDs::findNext, true); };
+        editor.onEscapeKey  = [this]
+        {
+            if (GenericCodeEditorComponent* ed = getOwner())
+                ed->hideFindPanel();
+        };
     }
 
     void setCommandManager (ApplicationCommandManager* cm)
@@ -406,30 +411,12 @@ public:
         findPrev.setBounds (getWidth() - 70, y, 30, 22);
     }
 
-    void buttonClicked (Button*) override
-    {
-        setCaseSensitiveSearch (caseButton.getToggleState());
-    }
-
-    void textEditorTextChanged (TextEditor&) override
+    void changeSearchString()
     {
         setSearchString (editor.getText());
 
         if (GenericCodeEditorComponent* ed = getOwner())
             ed->findNext (true, false);
-    }
-
-    void textEditorFocusLost (TextEditor&) override {}
-
-    void textEditorReturnKeyPressed (TextEditor&) override
-    {
-        ProjucerApplication::getCommandManager().invokeDirectly (CommandIDs::findNext, true);
-    }
-
-    void textEditorEscapeKeyPressed (TextEditor&) override
-    {
-        if (GenericCodeEditorComponent* ed = getOwner())
-            ed->hideFindPanel();
     }
 
     GenericCodeEditorComponent* getOwner() const
@@ -458,10 +445,9 @@ void GenericCodeEditorComponent::showFindPanel()
 {
     if (findPanel == nullptr)
     {
-        findPanel = new FindPanel();
+        findPanel.reset (new FindPanel());
         findPanel->setCommandManager (&ProjucerApplication::getCommandManager());
-
-        addAndMakeVisible (findPanel);
+        addAndMakeVisible (findPanel.get());
         resized();
     }
 

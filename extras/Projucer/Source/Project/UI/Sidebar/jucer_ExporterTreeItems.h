@@ -117,7 +117,7 @@ public:
     {
         if (resultCode == 1)
         {
-            exporter->addNewConfiguration (nullptr);
+            exporter->addNewConfiguration (false);
         }
         else if (resultCode == 2)
         {
@@ -262,7 +262,7 @@ public:
     void handlePopupMenuResult (int resultCode) override
     {
         if (resultCode == 1)
-            exporter.addNewConfiguration (config);
+            exporter.addNewConfigurationFromExisting (*config);
         else if (resultCode == 2)
             deleteAllSelectedItems();
     }
@@ -308,8 +308,7 @@ private:
 };
 
 //==============================================================================
-class ExportersTreeRoot    : public JucerTreeViewBase,
-                             private ValueTree::Listener
+class ExportersTreeRoot    : public ProjectTreeItemBase
 {
 public:
     ExportersTreeRoot (Project& p)

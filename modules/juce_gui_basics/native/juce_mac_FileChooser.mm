@@ -40,7 +40,8 @@ static NSMutableArray* createAllowedTypesArray (const StringArray& filters)
        #if defined (MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
         // From OS X 10.6 you can only specify allowed extensions, so any filters containing wildcards
         // must be of the form "*.extension"
-        jassert (filters[i].indexOf ("*") <= 0);
+        jassert (filters[i] == "*"
+                 || (filters[i].startsWith ("*.") && filters[i].lastIndexOfChar ('*') == 0));
        #endif
 
         const String f (filters[i].replace ("*.", ""));
@@ -77,7 +78,7 @@ public:
         delegate = [cls.createInstance() init];
         object_setInstanceVariable (delegate, "cppObject", this);
 
-        [panel setDelegate:delegate];
+        [panel setDelegate: delegate];
 
         filters.addTokens (owner.filters.replaceCharacters (",:", ";;"), ";", String());
         filters.trim();
@@ -136,7 +137,7 @@ public:
 
         if (panel != nil)
         {
-            [panel setDelegate:nil];
+            [panel setDelegate: nil];
 
             if (nsViewPreview != nil)
             {
@@ -149,9 +150,8 @@ public:
             }
 
             [panel close];
+            [panel release];
         }
-
-        panel = nullptr;
 
         if (delegate != nil)
         {
@@ -177,7 +177,7 @@ public:
         ScopedPointer<TemporaryMainMenuWithStandardCommands> tempMenu;
 
         if (JUCEApplicationBase::isStandaloneApp())
-            tempMenu = new TemporaryMainMenuWithStandardCommands();
+            tempMenu.reset (new TemporaryMainMenuWithStandardCommands());
 
         jassert (panel != nil);
        #if defined (MAC_OS_X_VERSION_10_6) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
@@ -206,17 +206,24 @@ private:
 
         if (panel != nil && result == NSFileHandlingPanelOKButton)
         {
+            auto addURLResult = [&chooserResults] (NSURL* urlToAdd)
+            {
+                auto scheme = nsStringToJuce ([urlToAdd scheme]);
+                auto path = nsStringToJuce ([urlToAdd path]);
+                chooserResults.add (URL (scheme + "://" + path));
+            };
+
             if (isSave)
             {
-                chooserResults.add (URL (nsStringToJuce ([[panel URL] absoluteString])));
+                addURLResult ([panel URL]);
             }
             else
             {
-                NSOpenPanel* openPanel = (NSOpenPanel*) panel;
-                NSArray* urls = [openPanel URLs];
+                auto* openPanel = (NSOpenPanel*) panel;
+                auto* urls = [openPanel URLs];
 
                 for (unsigned int i = 0; i < [urls count]; ++i)
-                    chooserResults.add (URL (nsStringToJuce ([[urls objectAtIndex: i] absoluteString])));
+                    addURLResult ([urls objectAtIndex: i]);
             }
         }
 
@@ -284,7 +291,7 @@ private:
     NSView* nsViewPreview = nullptr;
     bool selectsDirectories, selectsFiles, isSave, selectMultiple;
 
-    ScopedPointer<NSSavePanel> panel;
+    NSSavePanel* panel;
     DelegateType* delegate;
 
     StringArray filters;

@@ -274,7 +274,12 @@ void CoreGraphicsContext::excludeClipRectangle (const Rectangle<int>& r)
 void CoreGraphicsContext::clipToPath (const Path& path, const AffineTransform& transform)
 {
     createPath (path, transform);
-    CGContextClip (context);
+
+    if (path.isUsingNonZeroWinding())
+        CGContextClip (context);
+    else
+        CGContextEOClip (context);
+
     lastClipRectIsValid = false;
 }
 
@@ -341,9 +346,9 @@ void CoreGraphicsContext::restoreState()
 {
     CGContextRestoreGState (context);
 
-    if (SavedState* const top = stateStack.getLast())
+    if (auto* top = stateStack.getLast())
     {
-        state = top;
+        state.reset (top);
         stateStack.removeLast (1, false);
         lastClipRectIsValid = false;
     }

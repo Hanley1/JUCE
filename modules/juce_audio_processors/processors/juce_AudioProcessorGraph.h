@@ -96,7 +96,7 @@ public:
         const NodeID nodeID;
 
         /** The actual processor object that this node represents. */
-        AudioProcessor* getProcessor() const noexcept           { return processor; }
+        AudioProcessor* getProcessor() const noexcept           { return processor.get(); }
 
         /** A set of user-definable properties that are associated with this node.
 
@@ -349,7 +349,6 @@ public:
 
     void reset() override;
     void setNonRealtime (bool) noexcept override;
-    void setPlayHead (AudioPlayHead*) override;
 
     double getTailLengthSeconds() const override;
     bool acceptsMidi() const override;

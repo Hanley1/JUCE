@@ -75,7 +75,9 @@ public:
     void createBuildMenu (PopupMenu&);
     void createColourSchemeItems (PopupMenu&);
     void createWindowMenu (PopupMenu&);
+    void createDocumentMenu (PopupMenu&);
     void createToolsMenu (PopupMenu&);
+    void createHelpMenu (PopupMenu&);
     void createExtraAppleMenuItems (PopupMenu&);
     void handleMainMenuCommand (int menuItemID);
 
@@ -91,6 +93,8 @@ public:
     bool openFile (const File&);
     bool closeAllDocuments (bool askUserToSave);
     bool closeAllMainWindows();
+    void closeAllMainWindowsAndQuitIfNeeded();
+    void clearRecentFiles();
 
     PropertiesFile::Options getPropertyFileOptionsFor (const String& filename, bool isProjectSettings);
 
@@ -104,6 +108,11 @@ public:
 
     void showPathsWindow();
     void showEditorColourSchemeWindow();
+
+    void launchForumBrowser();
+    void launchModulesBrowser();
+    void launchClassesBrowser();
+    void launchTutorialsBrowser();
 
     void updateAllBuildTabs();
     LatestVersionChecker* createVersionChecker() const;

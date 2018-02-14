@@ -29,35 +29,6 @@ void handleGUIEditorMenuCommand (int);
 void registerGUIEditorCommands();
 
 
-    void attachCallback (Button& button, std::function<void()> callback)
-    {
-        struct ButtonCallback  : public Button::Listener,
-                                 private ComponentListener
-        {
-            ButtonCallback (Button& b, std::function<void()> f) : target (b), fn (f)
-            {
-                target.addListener (this);
-                target.addComponentListener (this);
-            }
-
-            ~ButtonCallback()
-            {
-                target.removeListener (this);
-            }
-
-            void componentBeingDeleted (Component&) override { delete this; }
-            void buttonClicked (Button*) override  { fn(); }
-
-            Button& target;
-            std::function<void()> fn;
-
-            JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ButtonCallback)
-        };
-
-        new ButtonCallback (button, callback);
-    }
-
-
 //==============================================================================
 struct ProjucerApplication::MainMenuModel  : public MenuBarModel
 {
@@ -358,7 +329,8 @@ ApplicationCommandManager& ProjucerApplication::getCommandManager()
 enum
 {
     recentProjectsBaseID = 100,
-    activeDocumentsBaseID = 300,
+    openWindowsBaseID = 300,
+    activeDocumentsBaseID = 400,
     colourSchemeBaseID = 1000,
     codeEditorColourSchemeBaseID = 2000,
 };
@@ -370,17 +342,19 @@ MenuBarModel* ProjucerApplication::getMenuModel()
 
 StringArray ProjucerApplication::getMenuNames()
 {
-    return { "File", "Edit", "View", "Build", "Window", "GUI Editor", "Tools" };
+    return { "File", "Edit", "View", "Build", "Window", "Document", "GUI Editor", "Tools", "Help" };
 }
 
 void ProjucerApplication::createMenu (PopupMenu& menu, const String& menuName)
 {
-    if (menuName == "File")             createFileMenu   (menu);
-    else if (menuName == "Edit")        createEditMenu   (menu);
-    else if (menuName == "View")        createViewMenu   (menu);
-    else if (menuName == "Build")       createBuildMenu  (menu);
-    else if (menuName == "Window")      createWindowMenu (menu);
-    else if (menuName == "Tools")       createToolsMenu  (menu);
+    if (menuName == "File")             createFileMenu      (menu);
+    else if (menuName == "Edit")        createEditMenu      (menu);
+    else if (menuName == "View")        createViewMenu      (menu);
+    else if (menuName == "Build")       createBuildMenu     (menu);
+    else if (menuName == "Window")      createWindowMenu    (menu);
+    else if (menuName == "Document")    createDocumentMenu  (menu);
+    else if (menuName == "Tools")       createToolsMenu     (menu);
+    else if (menuName == "Help")        createHelpMenu      (menu);
     else if (menuName == "GUI Editor")  createGUIEditorMenu (menu);
     else                                jassertfalse; // names have changed?
 }
@@ -391,9 +365,19 @@ void ProjucerApplication::createFileMenu (PopupMenu& menu)
     menu.addSeparator();
     menu.addCommandItem (commandManager, CommandIDs::open);
 
-    PopupMenu recentFiles;
-    settings->recentFiles.createPopupMenuItems (recentFiles, recentProjectsBaseID, true, true);
-    menu.addSubMenu ("Open Recent", recentFiles);
+    {
+        PopupMenu recentFiles;
+
+        settings->recentFiles.createPopupMenuItems (recentFiles, recentProjectsBaseID, true, true);
+
+        if (recentFiles.getNumItems() > 0)
+        {
+            recentFiles.addSeparator();
+            recentFiles.addCommandItem (commandManager, CommandIDs::clearRecentFiles);
+        }
+
+        menu.addSubMenu ("Open Recent", recentFiles);
+    }
 
     menu.addSeparator();
     menu.addCommandItem (commandManager, CommandIDs::closeDocument);
@@ -513,12 +497,28 @@ void ProjucerApplication::createWindowMenu (PopupMenu& menu)
     menu.addCommandItem (commandManager, CommandIDs::closeWindow);
     menu.addSeparator();
 
+    int counter = 0;
+    for (auto* window : mainWindowList.windows)
+    {
+        if (window != nullptr)
+        {
+            if (auto* project = window->getProject())
+                menu.addItem (openWindowsBaseID + counter++, project->getProjectNameString());
+        }
+    }
+
+    menu.addSeparator();
+    menu.addCommandItem (commandManager, CommandIDs::closeAllWindows);
+}
+
+void ProjucerApplication::createDocumentMenu (PopupMenu& menu)
+{
     menu.addCommandItem (commandManager, CommandIDs::goToPreviousDoc);
     menu.addCommandItem (commandManager, CommandIDs::goToNextDoc);
     menu.addCommandItem (commandManager, CommandIDs::goToCounterpart);
     menu.addSeparator();
 
-    const int numDocs = jmin (50, openDocumentManager.getNumOpenDocuments());
+    auto numDocs = jmin (50, openDocumentManager.getNumOpenDocuments());
 
     for (int i = 0; i < numDocs; ++i)
     {
@@ -537,6 +537,15 @@ void ProjucerApplication::createToolsMenu (PopupMenu& menu)
     menu.addCommandItem (commandManager, CommandIDs::showTranslationTool);
 }
 
+void ProjucerApplication::createHelpMenu (PopupMenu& menu)
+{
+    menu.addCommandItem (commandManager, CommandIDs::showForum);
+    menu.addSeparator();
+    menu.addCommandItem (commandManager, CommandIDs::showAPIModules);
+    menu.addCommandItem (commandManager, CommandIDs::showAPIClasses);
+    menu.addCommandItem (commandManager, CommandIDs::showTutorials);
+}
+
 void ProjucerApplication::createExtraAppleMenuItems (PopupMenu& menu)
 {
     menu.addCommandItem (commandManager, CommandIDs::showAboutWindow);
@@ -552,9 +561,14 @@ void ProjucerApplication::handleMainMenuCommand (int menuItemID)
         // open a file from the "recent files" menu
         openFile (settings->recentFiles.getFile (menuItemID - recentProjectsBaseID));
     }
+    else if (menuItemID >= openWindowsBaseID && menuItemID < (openWindowsBaseID + 100))
+    {
+        if (auto* window = mainWindowList.windows.getUnchecked (menuItemID - openWindowsBaseID))
+            window->toFront (true);
+    }
     else if (menuItemID >= activeDocumentsBaseID && menuItemID < (activeDocumentsBaseID + 200))
     {
-        if (OpenDocumentManager::Document* doc = openDocumentManager.getOpenDocument (menuItemID - activeDocumentsBaseID))
+        if (auto* doc = openDocumentManager.getOpenDocument (menuItemID - activeDocumentsBaseID))
             mainWindowList.openDocument (doc, true);
         else
             jassertfalse;
@@ -585,13 +599,19 @@ void ProjucerApplication::getAllCommands (Array <CommandID>& commands)
 
     const CommandID ids[] = { CommandIDs::newProject,
                               CommandIDs::open,
+                              CommandIDs::closeAllWindows,
                               CommandIDs::closeAllDocuments,
+                              CommandIDs::clearRecentFiles,
                               CommandIDs::saveAll,
                               CommandIDs::showGlobalPathsWindow,
                               CommandIDs::showUTF8Tool,
                               CommandIDs::showSVGPathTool,
                               CommandIDs::showAboutWindow,
                               CommandIDs::showAppUsageWindow,
+                              CommandIDs::showForum,
+                              CommandIDs::showAPIModules,
+                              CommandIDs::showAPIClasses,
+                              CommandIDs::showTutorials,
                               CommandIDs::loginLogout };
 
     commands.addArray (ids, numElementsInArray (ids));
@@ -617,9 +637,19 @@ void ProjucerApplication::getCommandInfo (CommandID commandID, ApplicationComman
                         CommandCategories::general, 0);
         break;
 
+    case CommandIDs::closeAllWindows:
+        result.setInfo ("Close All Windows", "Closes all open windows", CommandCategories::general, 0);
+        result.setActive (mainWindowList.windows.size() > 0);
+        break;
+
     case CommandIDs::closeAllDocuments:
         result.setInfo ("Close All Documents", "Closes all open documents", CommandCategories::general, 0);
         result.setActive (openDocumentManager.getNumOpenDocuments() > 0);
+        break;
+
+    case CommandIDs::clearRecentFiles:
+        result.setInfo ("Clear Recent Files", "Clears all recent files from the menu", CommandCategories::general, 0);
+        result.setActive (settings->recentFiles.getNumFiles() > 0);
         break;
 
     case CommandIDs::saveAll:
@@ -641,6 +671,22 @@ void ProjucerApplication::getCommandInfo (CommandID commandID, ApplicationComman
 
     case CommandIDs::showAppUsageWindow:
         result.setInfo ("Application Usage Data", "Shows the application usage data agreement window", CommandCategories::general, 0);
+        break;
+
+    case CommandIDs::showForum:
+        result.setInfo ("JUCE Community Forum", "Shows the JUCE community forum in a browser", CommandCategories::general, 0);
+        break;
+
+    case CommandIDs::showAPIModules:
+        result.setInfo ("API Modules", "Shows the API modules documentation in a browser", CommandCategories::general, 0);
+        break;
+
+    case CommandIDs::showAPIClasses:
+        result.setInfo ("API Classes", "Shows the API classes documentation in a browser", CommandCategories::general, 0);
+        break;
+
+    case CommandIDs::showTutorials:
+        result.setInfo ("JUCE Tutorials", "Shows the JUCE tutorials in a browser", CommandCategories::general, 0);
         break;
 
     case CommandIDs::loginLogout:
@@ -675,12 +721,18 @@ bool ProjucerApplication::perform (const InvocationInfo& info)
         case CommandIDs::newProject:                createNewProject(); break;
         case CommandIDs::open:                      askUserToOpenFile(); break;
         case CommandIDs::saveAll:                   openDocumentManager.saveAll(); break;
+        case CommandIDs::closeAllWindows:           closeAllMainWindowsAndQuitIfNeeded(); break;
         case CommandIDs::closeAllDocuments:         closeAllDocuments (true); break;
+        case CommandIDs::clearRecentFiles:          clearRecentFiles(); break;
         case CommandIDs::showUTF8Tool:              showUTF8ToolWindow(); break;
         case CommandIDs::showSVGPathTool:           showSVGPathDataToolWindow(); break;
         case CommandIDs::showGlobalPathsWindow:     showPathsWindow(); break;
         case CommandIDs::showAboutWindow:           showAboutWindow(); break;
         case CommandIDs::showAppUsageWindow:        showApplicationUsageDataAgreementPopup(); break;
+        case CommandIDs::showForum:                 launchForumBrowser(); break;
+        case CommandIDs::showAPIModules:            launchModulesBrowser(); break;
+        case CommandIDs::showAPIClasses:            launchClassesBrowser(); break;
+        case CommandIDs::showTutorials:             launchTutorialsBrowser(); break;
         case CommandIDs::loginLogout:               doLogout(); break;
         default:                                    return JUCEApplication::perform (info);
     }
@@ -722,6 +774,25 @@ bool ProjucerApplication::closeAllDocuments (bool askUserToSave)
 bool ProjucerApplication::closeAllMainWindows()
 {
     return server != nullptr || mainWindowList.askAllWindowsToClose();
+}
+
+void ProjucerApplication::closeAllMainWindowsAndQuitIfNeeded()
+{
+    if (closeAllMainWindows())
+    {
+       #if ! JUCE_MAC
+        if (mainWindowList.windows.size() == 0)
+            systemRequestedQuit();
+       #endif
+    }
+}
+
+void ProjucerApplication::clearRecentFiles()
+{
+    settings->recentFiles.clear();
+    settings->recentFiles.clearRecentFilesNatively();
+    settings->flush();
+    menuModel->menuItemsChanged();
 }
 
 //==============================================================================
@@ -800,6 +871,38 @@ void ProjucerApplication::showEditorColourSchemeWindow()
     }
 }
 
+void ProjucerApplication::launchForumBrowser()
+{
+    URL forumLink ("https://forum.juce.com/");
+
+    if (forumLink.isWellFormed())
+        forumLink.launchInDefaultBrowser();
+}
+
+void ProjucerApplication::launchModulesBrowser()
+{
+    URL modulesLink ("https://juce.com/doc/modules");
+
+    if (modulesLink.isWellFormed())
+        modulesLink.launchInDefaultBrowser();
+}
+
+void ProjucerApplication::launchClassesBrowser()
+{
+    URL classesLink ("https://juce.com/doc/classes");
+
+    if (classesLink.isWellFormed())
+        classesLink.launchInDefaultBrowser();
+}
+
+void ProjucerApplication::launchTutorialsBrowser()
+{
+    URL tutorialsLink ("https://juce.com/tutorials");
+
+    if (tutorialsLink.isWellFormed())
+        tutorialsLink.launchInDefaultBrowser();
+}
+
 //==============================================================================
 struct FileWithTime
 {
@@ -821,15 +924,14 @@ void ProjucerApplication::deleteLogger()
 
     if (logger != nullptr)
     {
-        Array<File> logFiles;
-        logger->getLogFile().getParentDirectory().findChildFiles (logFiles, File::findFiles, false);
+        auto logFiles = logger->getLogFile().getParentDirectory().findChildFiles (File::findFiles, false);
 
         if (logFiles.size() > maxNumLogFilesToKeep)
         {
-            Array <FileWithTime> files;
+            Array<FileWithTime> files;
 
-            for (int i = 0; i < logFiles.size(); ++i)
-                files.addUsingDefaultSort (logFiles.getReference(i));
+            for (auto& f : logFiles)
+                files.addUsingDefaultSort (f);
 
             for (int i = 0; i < files.size() - maxNumLogFilesToKeep; ++i)
                 files.getReference(i).file.deleteFile();

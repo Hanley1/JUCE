@@ -38,13 +38,11 @@ namespace juce
     either be read-only text, or editable.
 
     To find out when the user selects a different item or edits the text, you
-    can register a ComboBox::Listener to receive callbacks.
-
-    @see ComboBox::Listener
+    can assign a lambda to the onChange member, or register a ComboBox::Listener
+    to receive callbacks.
 */
 class JUCE_API  ComboBox  : public Component,
                             public SettableTooltipClient,
-                            public Label::Listener,
                             public Value::Listener,
                             private AsyncUpdater
 {
@@ -301,6 +299,10 @@ public:
     void removeListener (Listener* listener);
 
     //==============================================================================
+    /** You can assign a lambda to this callback object to have it called when the selected ID is changed. */
+    std::function<void()> onChange;
+
+    //==============================================================================
     /** Sets a message to display when there is no item currently selected.
         @see getTextWhenNothingSelected
     */
@@ -376,8 +378,6 @@ public:
 
     //==============================================================================
     /** @internal */
-    void labelTextChanged (Label*) override;
-    /** @internal */
     void enablementChanged() override;
     /** @internal */
     void colourChanged() override;
@@ -447,7 +447,5 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ComboBox)
 };
 
-/** This typedef is just for compatibility with old code - newer code should use the ComboBox::Listener class directly. */
-typedef ComboBox::Listener ComboBoxListener;
 
 } // namespace juce

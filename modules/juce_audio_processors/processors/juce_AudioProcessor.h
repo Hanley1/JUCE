@@ -129,6 +129,16 @@ public:
     */
     virtual void releaseResources() = 0;
 
+    /** Called by the host to indicate that you should reduce your memory footprint.
+
+        You should override this method to free up some memory gracefully, if possible,
+        otherwise the host may forcibly unload your AudioProcessor.
+
+        At the moment this method is only called when your AudioProcessor is an AUv3
+        plug-in running on iOS.
+    */
+    virtual void memoryWarningReceived()     { jassertfalse; }
+
     /** Renders the next block.
 
         When this method is called, the buffer contains a number of channels which is
@@ -357,7 +367,7 @@ public:
 
         //==============================================================================
         /** The bus's current layout. This will be AudioChannelSet::disabled() if the current
-            layout is dfisabled.
+            layout is disabled.
             @see AudioChannelSet
         */
         const AudioChannelSet& getCurrentLayout() const noexcept        { return layout; }
@@ -1609,8 +1619,9 @@ private:
    #if JucePlugin_Build_VST3
     friend class JuceVST3EditController;
     friend class JuceVST3Component;
-    Atomic<int> vst3IsPlaying { 0 };
    #endif
+
+    Atomic<int> vst3IsPlaying { 0 };
 
     // This method is no longer used - you can delete it from your AudioProcessor classes.
     JUCE_DEPRECATED_WITH_BODY (virtual bool silenceInProducesSilenceOut() const, { return false; })

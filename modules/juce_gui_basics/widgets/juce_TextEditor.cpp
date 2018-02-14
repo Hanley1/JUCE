@@ -882,7 +882,8 @@ TextEditor::TextEditor (const String& name, juce_wchar passwordChar)
 {
     setMouseCursor (MouseCursor::IBeamCursor);
 
-    addAndMakeVisible (viewport = new TextEditorViewport (*this));
+    viewport.reset (new TextEditorViewport (*this));
+    addAndMakeVisible (viewport.get());
     viewport->setViewedComponent (textHolder = new TextHolderComponent (*this));
     viewport->setWantsKeyboardFocus (false);
     viewport->setScrollBarsShown (false, false);
@@ -1084,7 +1085,8 @@ void TextEditor::recreateCaret()
     {
         if (caret == nullptr)
         {
-            textHolder->addChildComponent (caret = getLookAndFeel().createCaretComponent (this));
+            caret.reset (getLookAndFeel().createCaretComponent (this));
+            textHolder->addChildComponent (caret.get());
             updateCaretPosition();
         }
     }
@@ -1222,7 +1224,7 @@ void TextEditor::textChanged()
 {
     updateTextHolderSize();
 
-    if (listeners.size() > 0)
+    if (listeners.size() != 0 || onTextChange != nullptr)
         postCommandMessage (TextEditorDefs::textChangeMessageId);
 
     if (textValue.getValueSource().getReferenceCount() > 1)
@@ -1693,12 +1695,6 @@ void TextEditor::performPopupMenuAction (const int menuItemID)
     }
 }
 
-static void textEditorMenuCallback (int menuResult, TextEditor* editor)
-{
-    if (editor != nullptr && menuResult != 0)
-        editor->performPopupMenuAction (menuResult);
-}
-
 //==============================================================================
 void TextEditor::mouseDown (const MouseEvent& e)
 {
@@ -1718,8 +1714,21 @@ void TextEditor::mouseDown (const MouseEvent& e)
             m.setLookAndFeel (&getLookAndFeel());
             addPopupMenuItems (m, &e);
 
+            menuActive = true;
+
+            SafePointer<TextEditor> safeThis (this);
+
             m.showMenuAsync (PopupMenu::Options(),
-                             ModalCallbackFunction::forComponent (textEditorMenuCallback, this));
+                             [safeThis] (int menuResult)
+                             {
+                                 if (auto* editor = safeThis.getComponent())
+                                 {
+                                     editor->menuActive = false;
+
+                                     if (menuResult != 0)
+                                         editor->performPopupMenuAction (menuResult);
+                                 }
+                             });
         }
     }
 }
@@ -2101,19 +2110,35 @@ void TextEditor::handleCommandMessage (const int commandId)
     {
     case TextEditorDefs::textChangeMessageId:
         listeners.callChecked (checker, [this] (Listener& l) { l.textEditorTextChanged (*this); });
+
+        if (! checker.shouldBailOut() && onTextChange != nullptr)
+            onTextChange();
+
         break;
 
     case TextEditorDefs::returnKeyMessageId:
         listeners.callChecked (checker, [this] (Listener& l) { l.textEditorReturnKeyPressed (*this); });
+
+        if (! checker.shouldBailOut() && onReturnKey != nullptr)
+            onReturnKey();
+
         break;
 
     case TextEditorDefs::escapeKeyMessageId:
         listeners.callChecked (checker, [this] (Listener& l) { l.textEditorEscapeKeyPressed (*this); });
+
+        if (! checker.shouldBailOut() && onEscapeKey != nullptr)
+            onEscapeKey();
+
         break;
 
     case TextEditorDefs::focusLossMessageId:
         updateValueFromText();
         listeners.callChecked (checker, [this] (Listener& l) { l.textEditorFocusLost (*this); });
+
+        if (! checker.shouldBailOut() && onFocusLost != nullptr)
+            onFocusLost();
+
         break;
 
     default:

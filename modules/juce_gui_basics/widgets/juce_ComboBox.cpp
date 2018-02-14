@@ -418,10 +418,10 @@ void ComboBox::lookAndFeelChanged()
             newLabel->setText (label->getText(), dontSendNotification);
         }
 
-        label = newLabel;
+        std::swap (label, newLabel);
     }
 
-    addAndMakeVisible (label);
+    addAndMakeVisible (label.get());
 
     EditableState newEditableState = (label->isEditable() ? labelIsEditable : labelIsNotEditable);
 
@@ -431,7 +431,7 @@ void ComboBox::lookAndFeelChanged()
         setWantsKeyboardFocus (labelEditableState == labelIsNotEditable);
     }
 
-    label->addListener (this);
+    label->onTextChange = [this] { triggerAsyncUpdate(); };
     label->addMouseListener (this, false);
 
     label->setColour (Label::backgroundColourId, Colours::transparentBlack);
@@ -485,12 +485,6 @@ bool ComboBox::keyStateChanged (const bool isKeyDown)
 //==============================================================================
 void ComboBox::focusGained (FocusChangeType)    { repaint(); }
 void ComboBox::focusLost (FocusChangeType)      { repaint(); }
-
-void ComboBox::labelTextChanged (Label*)
-{
-    triggerAsyncUpdate();
-}
-
 
 //==============================================================================
 void ComboBox::showPopupIfNotActive()
@@ -626,13 +620,19 @@ void ComboBox::setScrollWheelEnabled (bool enabled) noexcept
 }
 
 //==============================================================================
-void ComboBox::addListener (ComboBoxListener* listener)       { listeners.add (listener); }
-void ComboBox::removeListener (ComboBoxListener* listener)    { listeners.remove (listener); }
+void ComboBox::addListener    (ComboBox::Listener* l)    { listeners.add (l); }
+void ComboBox::removeListener (ComboBox::Listener* l)    { listeners.remove (l); }
 
 void ComboBox::handleAsyncUpdate()
 {
     Component::BailOutChecker checker (this);
     listeners.callChecked (checker, [this] (Listener& l) { l.comboBoxChanged (this); });
+
+    if (checker.shouldBailOut())
+        return;
+
+    if (onChange != nullptr)
+        onChange();
 }
 
 void ComboBox::sendChange (const NotificationType notification)

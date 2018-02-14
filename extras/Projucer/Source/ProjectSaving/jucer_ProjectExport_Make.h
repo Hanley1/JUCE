@@ -36,30 +36,26 @@ protected:
     {
     public:
         MakeBuildConfiguration (Project& p, const ValueTree& settings, const ProjectExporter& e)
-            : BuildConfiguration (p, settings, e)
+            : BuildConfiguration (p, settings, e),
+              architectureTypeValue (config, Ids::linuxArchitecture, getUndoManager(), "-march=native")
         {
+            linkTimeOptimisationValue.setDefault (false);
+            optimisationLevelValue.setDefault (isDebug() ? gccO0 : gccO3);
         }
-
-        Value getArchitectureType()             { return getValue (Ids::linuxArchitecture); }
-        var getArchitectureTypeVar() const      { return config [Ids::linuxArchitecture]; }
-
-        var getDefaultOptimisationLevel() const override    { return var ((int) (isDebug() ? gccO0 : gccO3)); }
 
         void createConfigProperties (PropertyListBuilder& props) override
         {
             addGCCOptimisationProperty (props);
 
-            static const char* const archNames[] = { "(Default)", "<None>",       "32-bit (-m32)", "64-bit (-m64)", "ARM v6",       "ARM v7" };
-            const var archFlags[]                = { var(),       var (String()), "-m32",         "-m64",           "-march=armv6", "-march=armv7" };
-
-            props.add (new ChoicePropertyComponent (getArchitectureType(), "Architecture",
-                                                    StringArray (archNames, numElementsInArray (archNames)),
-                                                    Array<var> (archFlags, numElementsInArray (archFlags))));
+            props.add (new ChoicePropertyComponent (architectureTypeValue, "Architecture",
+                                                    { "<None>",      "Native",        "32-bit (-m32)", "64-bit (-m64)", "ARM v6",       "ARM v7" },
+                                                    { { String() } , "-march=native", "-m32",          "-m64",          "-march=armv6", "-march=armv7" }),
+                       "Specifies the 32/64-bit architecture to use.");
         }
 
         String getModuleLibraryArchName() const override
         {
-            String archFlag = getArchitectureTypeVar();
+            auto archFlag = getArchitectureTypeString();
             String prefix ("-march=");
 
             if (archFlag.startsWith (prefix))
@@ -73,6 +69,11 @@ protected:
 
             return "${JUCE_ARCH_LABEL}";
         }
+
+        String getArchitectureTypeString() const    { return architectureTypeValue.get(); }
+
+        //==============================================================================
+        ValueWithDefault architectureTypeValue;
     };
 
     BuildConfiguration::Ptr createBuildConfig (const ValueTree& tree) const override
@@ -145,7 +146,7 @@ public:
 
             StringArray s;
 
-            const String cppflagsVarName ("JUCE_CPPFLAGS_" + getTargetVarName());
+            auto cppflagsVarName = "JUCE_CPPFLAGS_" + getTargetVarName();
 
             s.add (cppflagsVarName + " := " + defines.joinIntoString (" "));
 
@@ -159,7 +160,7 @@ public:
             if (! ldflags.isEmpty())
                 s.add ("JUCE_LDFLAGS_" + getTargetVarName() + " := " + ldflags.joinIntoString (" "));
 
-            String targetName (owner.replacePreprocessorTokens (config, config.getTargetBinaryNameString()));
+            auto targetName = owner.replacePreprocessorTokens (config, config.getTargetBinaryNameString());
 
             if (owner.projectType.isStaticLibrary())
                 targetName = getStaticLibbedFilename (targetName);
@@ -218,8 +219,8 @@ public:
             {
                 if (projectItem.shouldBeCompiled())
                 {
-                    const Type targetType = (owner.getProject().getProjectType().isAudioPlugin() ? type : SharedCodeTarget);
-                    const File f = projectItem.getFile();
+                    auto targetType = (owner.getProject().getProjectType().isAudioPlugin() ? type : SharedCodeTarget);
+                    auto f = projectItem.getFile();
                     RelativePath relativePath (f, owner.getTargetFolder(), RelativePath::buildTargetFolder);
 
                     if (owner.shouldFileBeCompiledByDefault (relativePath)
@@ -235,26 +236,28 @@ public:
             for (int i = 0; i < owner.getAllGroups().size(); ++i)
                 findAllFilesToCompile (owner.getAllGroups().getReference(i), targetFiles);
 
-            const String cppflagsVarName = String ("JUCE_CPPFLAGS_") + getTargetVarName();
-            const String cflagsVarName   = String ("JUCE_CFLAGS_")   + getTargetVarName();
+            auto cppflagsVarName = "JUCE_CPPFLAGS_" + getTargetVarName();
+            auto cflagsVarName   = "JUCE_CFLAGS_"   + getTargetVarName();
 
             for (int i = 0; i < targetFiles.size(); ++i)
             {
                 jassert (targetFiles.getReference(i).getRoot() == RelativePath::buildTargetFolder);
 
                 out << "$(JUCE_OBJDIR)/" << escapeSpaces (owner.getObjectFileFor (targetFiles.getReference(i)))
-                << ": " << escapeSpaces (targetFiles.getReference(i).toUnixStyle()) << newLine
-                << "\t-$(V_AT)mkdir -p $(JUCE_OBJDIR)" << newLine
-                << "\t@echo \"Compiling " << targetFiles.getReference(i).getFileName() << "\"" << newLine
-                << (targetFiles.getReference(i).hasFileExtension ("c;s;S") ? "\t$(V_AT)$(CC) $(JUCE_CFLAGS) " : "\t$(V_AT)$(CXX) $(JUCE_CXXFLAGS) ")
-                << "$(" << cppflagsVarName << ") $(" << cflagsVarName << ") -o \"$@\" -c \"$<\""
-                << newLine << newLine;
+                    << ": " << escapeSpaces (targetFiles.getReference(i).toUnixStyle())            << newLine
+                    << "\t-$(V_AT)mkdir -p $(JUCE_OBJDIR)"                                         << newLine
+                    << "\t@echo \"Compiling " << targetFiles.getReference(i).getFileName() << "\"" << newLine
+                    << (targetFiles.getReference(i).hasFileExtension ("c;s;S") ? "\t$(V_AT)$(CC) $(JUCE_CFLAGS) "
+                                                                               : "\t$(V_AT)$(CXX) $(JUCE_CXXFLAGS) ")
+                    << "$(" << cppflagsVarName << ") $(" << cflagsVarName << ") -o \"$@\" -c \"$<\""
+                    << newLine
+                    << newLine;
             }
         }
 
         String getBuildProduct() const
         {
-            return String ("$(JUCE_OUTDIR)/$(JUCE_TARGET_") + getTargetVarName() + String (")");
+            return "$(JUCE_OUTDIR)/$(JUCE_TARGET_" + getTargetVarName() + ")";
         }
 
         String getPhonyName() const
@@ -308,8 +311,7 @@ public:
     static const char* getNameLinux()           { return "Linux Makefile"; }
     static const char* getValueTreeTypeName()   { return "LINUX_MAKE"; }
 
-    Value getExtraPkgConfig()                   { return getSetting (Ids::linuxExtraPkgConfig); }
-    String getExtraPkgConfigString() const      { return getSettingString (Ids::linuxExtraPkgConfig); }
+    String getExtraPkgConfigString() const      { return extraPkgConfigValue.get(); }
 
     static MakefileProjectExporter* createForSettings (Project& project, const ValueTree& settings)
     {
@@ -320,33 +322,34 @@ public:
     }
 
     //==============================================================================
-    MakefileProjectExporter (Project& p, const ValueTree& t)   : ProjectExporter (p, t)
+    MakefileProjectExporter (Project& p, const ValueTree& t)
+        : ProjectExporter (p, t),
+          extraPkgConfigValue (settings, Ids::linuxExtraPkgConfig, getUndoManager())
     {
         name = getNameLinux();
 
-        if (getTargetLocationString().isEmpty())
-            getTargetLocationValue() = getDefaultBuildsRootFolder() + "LinuxMakefile";
+        targetLocationValue.setDefault (getDefaultBuildsRootFolder() + "LinuxMakefile");
     }
 
     //==============================================================================
-    bool canLaunchProject() override                    { return false; }
-    bool launchProject() override                       { return false; }
-    bool usesMMFiles() const override                   { return false; }
-    bool canCopeWithDuplicateFiles() override           { return false; }
+    bool canLaunchProject() override                        { return false; }
+    bool launchProject() override                           { return false; }
+    bool usesMMFiles() const override                       { return false; }
+    bool canCopeWithDuplicateFiles() override               { return false; }
     bool supportsUserDefinedConfigurations() const override { return true; }
 
-    bool isXcode() const override                       { return false; }
-    bool isVisualStudio() const override                { return false; }
-    bool isCodeBlocks() const override                  { return false; }
-    bool isMakefile() const override                    { return true; }
-    bool isAndroidStudio() const override               { return false; }
-    bool isCLion() const override                       { return false; }
+    bool isXcode() const override                           { return false; }
+    bool isVisualStudio() const override                    { return false; }
+    bool isCodeBlocks() const override                      { return false; }
+    bool isMakefile() const override                        { return true; }
+    bool isAndroidStudio() const override                   { return false; }
+    bool isCLion() const override                           { return false; }
 
-    bool isAndroid() const override                     { return false; }
-    bool isWindows() const override                     { return false; }
-    bool isLinux() const override                       { return true; }
-    bool isOSX() const override                         { return false; }
-    bool isiOS() const override                         { return false; }
+    bool isAndroid() const override                         { return false; }
+    bool isWindows() const override                         { return false; }
+    bool isLinux() const override                           { return true; }
+    bool isOSX() const override                             { return false; }
+    bool isiOS() const override                             { return false; }
 
     bool supportsTargetType (ProjectType::Target::Type type) const override
     {
@@ -370,7 +373,7 @@ public:
 
     void createExporterProperties (PropertyListBuilder& properties) override
     {
-        properties.add (new TextPropertyComponent (getExtraPkgConfig(), "pkg-config libraries", 8192, false),
+        properties.add (new TextPropertyComponent (extraPkgConfigValue, "pkg-config libraries", 8192, false),
                    "Extra pkg-config libraries for you application. Each package should be space separated.");
     }
 
@@ -379,7 +382,7 @@ public:
     {
         for (auto* target : targets)
         {
-            const ProjectType::Target::TargetFileType fileType = target->getTargetFileType();
+            auto fileType = target->getTargetFileType();
 
             if (fileType == ProjectType::Target::sharedLibraryOrDLL
              || fileType == ProjectType::Target::pluginBundle)
@@ -426,6 +429,9 @@ public:
     }
 
 private:
+    ValueWithDefault extraPkgConfigValue;
+
+    //==============================================================================
     StringPairArray getDefines (const BuildConfiguration& config) const
     {
         StringPairArray result;
@@ -526,7 +532,7 @@ private:
     {
         StringArray result;
 
-        auto cppStandard = project.getCppStandardValue().toString();
+        auto cppStandard = project.getCppStandardString();
 
         if (cppStandard == "latest")
             cppStandard = "1z";
@@ -556,8 +562,7 @@ private:
     {
         StringArray result (linuxLibs);
 
-        StringArray libraries;
-        libraries.addTokens (getExternalLibrariesString(), ";", "\"'");
+        auto libraries = StringArray::fromTokens (getExternalLibrariesString(), ";", "\"'");
         libraries.removeEmptyStrings();
 
         for (auto& lib : libraries)
@@ -578,7 +583,7 @@ private:
 
     StringArray getLinkerFlags (const BuildConfiguration& config) const
     {
-        StringArray result (makefileExtraLinkerFlags);
+        auto result = makefileExtraLinkerFlags;
 
         if (! config.isDebug())
             result.add ("-fvisibility=hidden");
@@ -665,7 +670,7 @@ private:
 
     void writeTargetLines (OutputStream& out, const bool useLinuxPackages) const
     {
-        const int n = targets.size();
+        auto n = targets.size();
 
         for (int i = 0; i < n; ++i)
         {
@@ -708,9 +713,9 @@ private:
 
     void writeConfig (OutputStream& out, const MakeBuildConfiguration& config) const
     {
-        const String buildDirName ("build");
-        const String intermediatesDirName (buildDirName + "/intermediate/" + config.getName());
-        String outputDir (buildDirName);
+        String buildDirName ("build");
+        auto intermediatesDirName = buildDirName + "/intermediate/" + config.getName();
+        auto outputDir = buildDirName;
 
         if (config.getTargetBinaryRelativePathString().isNotEmpty())
         {
@@ -733,7 +738,7 @@ private:
 
         for (auto target : targets)
         {
-            StringArray lines = target->getTargetSettings (config);
+            auto lines = target->getTargetSettings (config);
 
             if (lines.size() > 0)
                 out << "  " << lines.joinIntoString ("\n  ") << newLine;
@@ -770,7 +775,7 @@ private:
 
     void writeIncludeLines (OutputStream& out) const
     {
-        const int n = targets.size();
+        auto n = targets.size();
 
         for (int i = 0; i < n; ++i)
         {
@@ -865,9 +870,8 @@ private:
 
     String getArchFlags (const BuildConfiguration& config) const
     {
-        if (const MakeBuildConfiguration* makeConfig = dynamic_cast<const MakeBuildConfiguration*> (&config))
-            if (! makeConfig->getArchitectureTypeVar().isVoid())
-                return makeConfig->getArchitectureTypeVar();
+        if (auto* makeConfig = dynamic_cast<const MakeBuildConfiguration*> (&config))
+            return makeConfig->getArchitectureTypeString();
 
         return "-march=native";
     }

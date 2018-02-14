@@ -31,7 +31,7 @@ FileBrowserComponent::FileBrowserComponent (int flags_,
                                             const File& initialFileOrDirectory,
                                             const FileFilter* fileFilter_,
                                             FilePreviewComponent* previewComp_)
-   : FileFilter (String()),
+   : FileFilter ({}),
      fileFilter (fileFilter_),
      flags (flags_),
      previewComp (previewComp_),
@@ -64,12 +64,12 @@ FileBrowserComponent::FileBrowserComponent (int flags_,
         filename = initialFileOrDirectory.getFileName();
     }
 
-    fileList = new DirectoryContentsList (this, thread);
+    fileList.reset (new DirectoryContentsList (this, thread));
 
     if ((flags & useTreeView) != 0)
     {
         auto tree = new FileTreeComponent (*fileList);
-        fileListComponent = tree;
+        fileListComponent.reset (tree);
 
         if ((flags & canSelectMultipleItems) != 0)
             tree->setMultiSelectEnabled (true);
@@ -79,7 +79,7 @@ FileBrowserComponent::FileBrowserComponent (int flags_,
     else
     {
         auto list = new FileListComponent (*fileList);
-        fileListComponent = list;
+        fileListComponent.reset (list);
         list->setOutlineThickness (1);
 
         if ((flags & canSelectMultipleItems) != 0)
@@ -93,20 +93,28 @@ FileBrowserComponent::FileBrowserComponent (int flags_,
     addAndMakeVisible (currentPathBox);
     currentPathBox.setEditableText (true);
     resetRecentPaths();
-    currentPathBox.addListener (this);
+    currentPathBox.onChange = [this] { updateSelectedPath(); };
 
     addAndMakeVisible (filenameBox);
     filenameBox.setMultiLine (false);
     filenameBox.setSelectAllWhenFocused (true);
     filenameBox.setText (filename, false);
-    filenameBox.addListener (this);
+    filenameBox.onTextChange = [this] { sendListenerChangeMessage(); };
+    filenameBox.onReturnKey  = [this] { changeFilename(); };
+    filenameBox.onFocusLost  = [this]
+    {
+        if (! isSaveMode())
+            selectionChanged();
+    };
+
     filenameBox.setReadOnly ((flags & (filenameBoxIsReadOnly | canSelectMultipleItems)) != 0);
 
     addAndMakeVisible (fileLabel);
     fileLabel.attachToComponent (&filenameBox, true);
 
-    addAndMakeVisible (goUpButton = getLookAndFeel().createFileBrowserGoUpButton());
-    goUpButton->addListener (this);
+    goUpButton.reset (getLookAndFeel().createFileBrowserGoUpButton());
+    addAndMakeVisible (goUpButton.get());
+    goUpButton->onClick = [this] { goUp(); };
     goUpButton->setTooltip (TRANS ("Go up to parent directory"));
 
     if (previewComp != nullptr)
@@ -333,15 +341,15 @@ FilePreviewComponent* FileBrowserComponent::getPreviewComponent() const noexcept
 
 DirectoryContentsDisplayComponent* FileBrowserComponent::getDisplayComponent() const noexcept
 {
-    return fileListComponent;
+    return fileListComponent.get();
 }
 
 //==============================================================================
 void FileBrowserComponent::resized()
 {
     getLookAndFeel()
-        .layoutFileBrowserComponent (*this, fileListComponent, previewComp,
-                                     &currentPathBox, &filenameBox, goUpButton);
+        .layoutFileBrowserComponent (*this, fileListComponent.get(), previewComp,
+                                     &currentPathBox, &filenameBox, goUpButton.get());
 }
 
 //==============================================================================
@@ -410,7 +418,7 @@ void FileBrowserComponent::fileDoubleClicked (const File& f)
         setRoot (f);
 
         if ((flags & canSelectDirectories) != 0 && (flags & doNotClearFileNameOnRootChange) == 0)
-            filenameBox.setText (String());
+            filenameBox.setText ({});
     }
     else
     {
@@ -438,12 +446,7 @@ bool FileBrowserComponent::keyPressed (const KeyPress& key)
 }
 
 //==============================================================================
-void FileBrowserComponent::textEditorTextChanged (TextEditor&)
-{
-    sendListenerChangeMessage();
-}
-
-void FileBrowserComponent::textEditorReturnKeyPressed (TextEditor&)
+void FileBrowserComponent::changeFilename()
 {
     if (filenameBox.getText().containsChar (File::getSeparatorChar()))
     {
@@ -455,7 +458,7 @@ void FileBrowserComponent::textEditorReturnKeyPressed (TextEditor&)
             chosenFiles.clear();
 
             if ((flags & doNotClearFileNameOnRootChange) == 0)
-                filenameBox.setText (String());
+                filenameBox.setText ({});
         }
         else
         {
@@ -471,23 +474,8 @@ void FileBrowserComponent::textEditorReturnKeyPressed (TextEditor&)
     }
 }
 
-void FileBrowserComponent::textEditorEscapeKeyPressed (TextEditor&)
-{
-}
-
-void FileBrowserComponent::textEditorFocusLost (TextEditor&)
-{
-    if (! isSaveMode())
-        selectionChanged();
-}
-
 //==============================================================================
-void FileBrowserComponent::buttonClicked (Button*)
-{
-    goUp();
-}
-
-void FileBrowserComponent::comboBoxChanged (ComboBox*)
+void FileBrowserComponent::updateSelectedPath()
 {
     auto newText = currentPathBox.getText().trim().unquoted();
 
@@ -498,9 +486,9 @@ void FileBrowserComponent::comboBoxChanged (ComboBox*)
         StringArray rootNames, rootPaths;
         getRoots (rootNames, rootPaths);
 
-        if (rootPaths [index].isNotEmpty())
+        if (rootPaths[index].isNotEmpty())
         {
-            setRoot (File (rootPaths [index]));
+            setRoot (File (rootPaths[index]));
         }
         else
         {
@@ -554,8 +542,8 @@ void FileBrowserComponent::getDefaultRoots (StringArray& rootNames, StringArray&
         rootNames.add (name);
     }
 
-    rootPaths.add (String());
-    rootNames.add (String());
+    rootPaths.add ({});
+    rootNames.add ({});
 
     rootPaths.add (File::getSpecialLocation (File::userDocumentsDirectory).getFullPathName());
     rootNames.add (TRANS("Documents"));
@@ -578,17 +566,11 @@ void FileBrowserComponent::getDefaultRoots (StringArray& rootNames, StringArray&
     rootPaths.add (File::getSpecialLocation (File::userDesktopDirectory).getFullPathName());
     rootNames.add (TRANS("Desktop"));
 
-    rootPaths.add (String());
-    rootNames.add (String());
+    rootPaths.add ({});
+    rootNames.add ({});
 
-    Array<File> volumes;
-    File vol ("/Volumes");
-    vol.findChildFiles (volumes, File::findDirectories, false);
-
-    for (int i = 0; i < volumes.size(); ++i)
+    for (auto& volume : File ("/Volumes").findChildFiles (File::findDirectories, false))
     {
-        const File& volume = volumes.getReference(i);
-
         if (volume.isDirectory() && ! volume.getFileName().startsWithChar ('.'))
         {
             rootPaths.add (volume.getFullPathName());

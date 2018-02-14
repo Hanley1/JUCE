@@ -35,13 +35,13 @@
 
   ID:               juce_gui_basics
   vendor:           juce
-  version:          5.2.0
+  version:          5.2.1
   name:             JUCE GUI core classes
   description:      Basic user-interface components and related classes.
   website:          http://www.juce.com/juce
   license:          GPL/Commercial
 
-  dependencies:     juce_events juce_graphics juce_data_structures
+  dependencies:     juce_graphics juce_data_structures
   OSXFrameworks:    Cocoa Carbon QuartzCore
   iOSFrameworks:    UIKit MobileCoreServices
   linuxPackages:    x11 xinerama xext
@@ -67,7 +67,8 @@
  #define JUCE_ENABLE_REPAINT_DEBUGGING 0
 #endif
 
-/** JUCE_USE_XRANDR: Enables Xrandr multi-monitor support (Linux only).
+/** Config: JUCE_USE_XRANDR
+    Enables Xrandr multi-monitor support (Linux only).
     Unless you specifically want to disable this, it's best to leave this option turned on.
     Note that your users do not need to have Xrandr installed for your JUCE app to run, as
     the availability of Xrandr is queried during runtime.
@@ -76,7 +77,8 @@
  #define JUCE_USE_XRANDR 1
 #endif
 
-/** JUCE_USE_XINERAMA: Enables Xinerama multi-monitor support (Linux only).
+/** Config: JUCE_USE_XINERAMA
+    Enables Xinerama multi-monitor support (Linux only).
     Unless you specifically want to disable this, it's best to leave this option turned on.
     This will be used as a fallback if JUCE_USE_XRANDR not set or libxrandr cannot be found.
     Note that your users do not need to have Xinerama installed for your JUCE app to run, as
@@ -117,8 +119,6 @@ namespace juce
     class MouseInputSource;
     class MouseInputSourceInternal;
     class ComponentPeer;
-    class MarkerList;
-    class RelativeRectangle;
     class MouseEvent;
     struct MouseWheelDetails;
     struct PenDetails;
@@ -130,28 +130,21 @@ namespace juce
     class ComboBox;
     class Button;
     class FilenameComponent;
-    class DocumentWindow;
     class ResizableWindow;
-    class GroupComponent;
     class MenuBarComponent;
-    class DropShadower;
     class GlyphArrangement;
-    class PropertyComponent;
     class TableHeaderComponent;
     class Toolbar;
-    class ToolbarItemComponent;
     class PopupMenu;
     class ProgressBar;
     class FileBrowserComponent;
     class DirectoryContentsDisplayComponent;
     class FilePreviewComponent;
-    class ImageButton;
     class CallOutBox;
     class Drawable;
     class DrawablePath;
     class DrawableComposite;
     class CaretComponent;
-    class BubbleComponent;
     class KeyPressMappingSet;
     class ApplicationCommandManagerListener;
     class DrawableButton;

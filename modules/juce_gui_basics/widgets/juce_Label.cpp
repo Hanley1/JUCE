@@ -70,7 +70,7 @@ void Label::setText (const String& newText, NotificationType notification)
     }
 }
 
-String Label::getText (const bool returnActiveEditorContents) const
+String Label::getText (bool returnActiveEditorContents) const
 {
     return (returnActiveEditorContents && isBeingEdited())
                 ? editor->getText()
@@ -134,7 +134,7 @@ Component* Label::getAttachedComponent() const
     return static_cast<Component*> (ownerComponent);
 }
 
-void Label::attachToComponent (Component* owner, const bool onLeft)
+void Label::attachToComponent (Component* owner, bool onLeft)
 {
     if (ownerComponent != nullptr)
         ownerComponent->removeComponentListener (this);
@@ -158,18 +158,17 @@ void Label::componentMovedOrResized (Component& component, bool /*wasMoved*/, bo
 
     if (leftOfOwnerComp)
     {
-        setSize (jmin (roundToInt (f.getStringWidthFloat (textValue.toString()) + 0.5f) + getBorderSize().getLeftAndRight(),
-                       component.getX()),
-                 component.getHeight());
+        auto width = jmin (roundToInt (f.getStringWidthFloat (textValue.toString()) + 0.5f)
+                             + getBorderSize().getLeftAndRight(),
+                           component.getX());
 
-        setTopRightPosition (component.getX(), component.getY());
+        setBounds (component.getX() - width, component.getY(), width, component.getHeight());
     }
     else
     {
-        setSize (component.getWidth(),
-                 getBorderSize().getTopAndBottom() + 6 + roundToInt (f.getHeight() + 0.5f));
+        auto height = getBorderSize().getTopAndBottom() + 6 + roundToInt (f.getHeight() + 0.5f);
 
-        setTopLeftPosition (component.getX(), component.getY() - getHeight());
+        setBounds (component.getX(), component.getY() - height, component.getWidth(), height);
     }
 }
 
@@ -191,7 +190,13 @@ void Label::textWasChanged() {}
 void Label::editorShown (TextEditor* textEditor)
 {
     Component::BailOutChecker checker (this);
-    listeners.callChecked (checker, [this, textEditor] (LabelListener& l) { l.editorShown (this, *textEditor); });
+    listeners.callChecked (checker, [this, textEditor] (Label::Listener& l) { l.editorShown (this, *textEditor); });
+
+    if (checker.shouldBailOut())
+        return;
+
+    if (onEditorShow != nullptr)
+        onEditorShow();
 }
 
 void Label::editorAboutToBeHidden (TextEditor* textEditor)
@@ -200,14 +205,21 @@ void Label::editorAboutToBeHidden (TextEditor* textEditor)
         peer->dismissPendingTextInput();
 
     Component::BailOutChecker checker (this);
-    listeners.callChecked (checker, [this, textEditor] (LabelListener& l) { l.editorHidden (this, *textEditor); });
+    listeners.callChecked (checker, [this, textEditor] (Label::Listener& l) { l.editorHidden (this, *textEditor); });
+
+    if (checker.shouldBailOut())
+        return;
+
+    if (onEditorHide != nullptr)
+        onEditorHide();
 }
 
 void Label::showEditor()
 {
     if (editor == nullptr)
     {
-        addAndMakeVisible (editor = createEditorComponent());
+        editor.reset (createEditorComponent());
+        addAndMakeVisible (editor.get());
         editor->setText (getText(), false);
         editor->setKeyboardType (keyboardType);
         editor->addListener (this);
@@ -221,7 +233,7 @@ void Label::showEditor()
         resized();
         repaint();
 
-        editorShown (editor);
+        editorShown (editor.get());
 
         enterModalState (false);
         editor->grabKeyboardFocus();
@@ -249,14 +261,15 @@ bool Label::updateFromTextEditorContents (TextEditor& ed)
     return false;
 }
 
-void Label::hideEditor (const bool discardCurrentEditorContents)
+void Label::hideEditor (bool discardCurrentEditorContents)
 {
     if (editor != nullptr)
     {
         WeakReference<Component> deletionChecker (this);
-        ScopedPointer<TextEditor> outgoingEditor (editor);
+        ScopedPointer<TextEditor> outgoingEditor;
+        std::swap (outgoingEditor, editor);
 
-        editorAboutToBeHidden (outgoingEditor);
+        editorAboutToBeHidden (outgoingEditor.get());
 
         const bool changed = (! discardCurrentEditorContents)
                                && updateFromTextEditorContents (*outgoingEditor);
@@ -311,7 +324,7 @@ TextEditor* Label::createEditorComponent()
 
 TextEditor* Label::getCurrentTextEditor() const noexcept
 {
-    return editor;
+    return editor.get();
 }
 
 //==============================================================================
@@ -380,8 +393,8 @@ class LabelKeyboardFocusTraverser   : public KeyboardFocusTraverser
 public:
     LabelKeyboardFocusTraverser() {}
 
-    Component* getNextComponent (Component* c)     { return KeyboardFocusTraverser::getNextComponent (getComp (c)); }
-    Component* getPreviousComponent (Component* c) { return KeyboardFocusTraverser::getPreviousComponent (getComp (c)); }
+    Component* getNextComponent (Component* c) override     { return KeyboardFocusTraverser::getNextComponent (getComp (c)); }
+    Component* getPreviousComponent (Component* c) override { return KeyboardFocusTraverser::getPreviousComponent (getComp (c)); }
 
     static Component* getComp (Component* current)
     {
@@ -396,20 +409,19 @@ KeyboardFocusTraverser* Label::createFocusTraverser()
 }
 
 //==============================================================================
-void Label::addListener (LabelListener* const listener)
-{
-    listeners.add (listener);
-}
-
-void Label::removeListener (LabelListener* const listener)
-{
-    listeners.remove (listener);
-}
+void Label::addListener    (Label::Listener* l)     { listeners.add (l); }
+void Label::removeListener (Label::Listener* l)     { listeners.remove (l); }
 
 void Label::callChangeListeners()
 {
     Component::BailOutChecker checker (this);
     listeners.callChecked (checker, [this] (Listener& l) { l.labelTextChanged (this); });
+
+    if (checker.shouldBailOut())
+        return;
+
+    if (onTextChange != nullptr)
+        onTextChange();
 }
 
 //==============================================================================
@@ -417,7 +429,7 @@ void Label::textEditorTextChanged (TextEditor& ed)
 {
     if (editor != nullptr)
     {
-        jassert (&ed == editor);
+        jassert (&ed == editor.get());
 
         if (! (hasKeyboardFocus (true) || isCurrentlyBlockedByAnotherModalComponent()))
         {
@@ -433,14 +445,14 @@ void Label::textEditorReturnKeyPressed (TextEditor& ed)
 {
     if (editor != nullptr)
     {
-        jassert (&ed == editor);
+        jassert (&ed == editor.get());
 
-        const bool changed = updateFromTextEditorContents (ed);
+        WeakReference<Component> deletionChecker (this);
+        bool changed = updateFromTextEditorContents (ed);
         hideEditor (true);
 
-        if (changed)
+        if (changed && deletionChecker != nullptr)
         {
-            WeakReference<Component> deletionChecker (this);
             textWasEdited();
 
             if (deletionChecker != nullptr)
@@ -453,7 +465,7 @@ void Label::textEditorEscapeKeyPressed (TextEditor& ed)
 {
     if (editor != nullptr)
     {
-        jassert (&ed == editor);
+        jassert (&ed == editor.get());
         ignoreUnused (ed);
 
         editor->setText (textValue.toString(), false);
