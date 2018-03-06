@@ -105,21 +105,14 @@ namespace juce
     return self;
 }
 
-- (id)init
-{
-    self = [super init];
-    appSuspendTask = UIBackgroundTaskInvalid;
-    
-#if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-    [UNUserNotificationCenter currentNotificationCenter].delegate = self;
-#endif
-    
-    return self;
-}
-
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     
+#if SPANISH
+    [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
+#else
     [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
+#endif
+
     NSObject* _pushNotificationsDelegate;
 
     ignoreUnused (application);
