@@ -1498,8 +1498,17 @@ String String::toUpperCase() const
 
         ++(builder.source);
     }
-
-    return static_cast<String&&> (builder.result);
+    
+    String str = static_cast<String&&> (builder.result);
+    
+    str = str.replace("ñ", "Ñ");
+    str = str.replace("á", "Á");
+    str = str.replace("é", "É");
+    str = str.replace("í", "Í");
+    str = str.replace("ó", "Ó");
+    str = str.replace("ú", "Ú");
+    
+    return str;
 }
 
 String String::toLowerCase() const
