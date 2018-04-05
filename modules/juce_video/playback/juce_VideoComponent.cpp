@@ -43,6 +43,11 @@ VideoComponent::~VideoComponent()
 {
     pimpl.reset();
 }
+    
+void VideoComponent::showPlaybackControls(bool show)
+{
+    pimpl->showPlaybackControls(show);
+}
 
 Result VideoComponent::load (const File& file)
 {

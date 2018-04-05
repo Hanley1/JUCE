@@ -65,6 +65,19 @@ struct VideoComponent::Pimpl   : public BaseClass
         setView (nil);
         [controller release];
     }
+    
+    void showPlaybackControls(bool show)
+    {
+#if JUCE_IOS
+        controller.showsPlaybackControls = show;
+#else
+        if (show)
+            controller.controlsStyle = AVPlayerViewControlsStyleInline;
+        else
+            controller.controlsStyle = AVPlayerViewControlsStyleNone;
+#endif
+        
+    }
 
     Result load (const File& file)
     {

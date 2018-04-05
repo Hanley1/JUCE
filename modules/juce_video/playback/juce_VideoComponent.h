@@ -49,6 +49,8 @@ public:
 
     /** Destructor. */
     ~VideoComponent();
+    
+    void showPlaybackControls(bool show);
 
     //==============================================================================
     /** Tries to load a video from a local file.
