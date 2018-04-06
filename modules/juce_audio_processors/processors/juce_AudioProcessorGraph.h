@@ -40,6 +40,8 @@ namespace juce
 
     To play back a graph through an audio device, you might want to use an
     AudioProcessorPlayer object.
+
+    @tags{Audio}
 */
 class JUCE_API  AudioProcessorGraph   : public AudioProcessor,
                                         public ChangeBroadcaster,
@@ -376,7 +378,7 @@ private:
 
     friend class AudioGraphIOProcessor;
 
-    bool isPrepared = false;
+    Atomic<int> isPrepared { 0 };
 
     void topologyChanged();
     void handleAsyncUpdate() override;

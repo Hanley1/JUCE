@@ -42,12 +42,16 @@ namespace juce
 
     This class should not be inherited when creating a plug-in as the host will
     handle audio streams from hardware devices.
+
+    @tags{Audio}
 */
 class JUCE_API AudioAppComponent   : public Component,
                                      public AudioSource
 {
 public:
     AudioAppComponent();
+    AudioAppComponent (AudioDeviceManager&);
+
     ~AudioAppComponent();
 
     /** A subclass should call this from their constructor, to set up the audio. */
@@ -118,11 +122,13 @@ public:
     void shutdownAudio();
 
 
-    AudioDeviceManager deviceManager;
+    AudioDeviceManager& deviceManager;
 
 private:
-    //==============================================================================
+    //=============================================================================
+    AudioDeviceManager defaultDeviceManager;
     AudioSourcePlayer audioSourcePlayer;
+    bool usingCustomDeviceManager;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioAppComponent)
 };

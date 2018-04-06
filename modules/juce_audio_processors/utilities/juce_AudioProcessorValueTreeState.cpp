@@ -421,12 +421,58 @@ struct AudioProcessorValueTreeState::SliderAttachment::Pimpl  : private Attached
     Pimpl (AudioProcessorValueTreeState& s, const String& p, Slider& sl)
         : AttachedControlBase (s, p), slider (sl), ignoreCallbacks (false)
     {
-        NormalisableRange<float> range (s.getParameterRange (paramID));
-        slider.setRange (range.start, range.end, range.interval);
-        slider.setSkewFactor (range.skew, range.symmetricSkew);
+        NormalisableRange<float> range (state.getParameterRange (paramID));
 
-        if (AudioProcessorParameter* param = state.getParameter (paramID))
+        if (range.interval != 0 || range.skew != 0)
+        {
+            slider.setRange (range.start, range.end, range.interval);
+            slider.setSkewFactor (range.skew, range.symmetricSkew);
+        }
+        else
+        {
+            auto convertFrom0To1Function = [range] (double currentRangeStart,
+                                                    double currentRangeEnd,
+                                                    double normalisedValue) mutable
+            {
+                range.start = (float) currentRangeStart;
+                range.end = (float) currentRangeEnd;
+                return (double) range.convertFrom0to1 ((float) normalisedValue);
+            };
+
+            auto convertTo0To1Function = [range] (double currentRangeStart,
+                                                  double currentRangeEnd,
+                                                  double mappedValue) mutable
+            {
+                range.start = (float) currentRangeStart;
+                range.end = (float) currentRangeEnd;
+                return (double) range.convertTo0to1 ((float) mappedValue);
+            };
+
+            auto snapToLegalValueFunction = [range] (double currentRangeStart,
+                                                     double currentRangeEnd,
+                                                     double valueToSnap) mutable
+            {
+                range.start = (float) currentRangeStart;
+                range.end = (float) currentRangeEnd;
+                return (double) range.snapToLegalValue ((float) valueToSnap);
+            };
+
+            slider.setNormalisableRange ({ (double) range.start, (double) range.end,
+                                           convertFrom0To1Function,
+                                           convertTo0To1Function,
+                                           snapToLegalValueFunction });
+        }
+
+        if (auto* param = dynamic_cast<AudioProcessorValueTreeState::Parameter*> (state.getParameter (paramID)))
+        {
+            if (param->textToValueFunction != nullptr)
+                slider.valueFromTextFunction = [param] (const String& text) { return (double) param->textToValueFunction (text); };
+
+            if (param->valueToTextFunction != nullptr)
+                slider.textFromValueFunction = [param] (double value)       { return param->valueToTextFunction ((float) value); };
+
             slider.setDoubleClickReturnValue (true, range.convertFrom0to1 (param->getDefaultValue()));
+        }
 
         sendInitialUpdate();
         slider.addListener (this);

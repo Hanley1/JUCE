@@ -31,6 +31,7 @@
 class ProjectExporter;
 class LibraryModule;
 class EnabledModuleList;
+class ProjectContentComponent;
 
 //==============================================================================
 class Project  : public FileBasedDocument,
@@ -331,9 +332,20 @@ public:
     String getUniqueTargetFolderSuffixForExporter (const String& exporterName, const String& baseTargetFolder);
 
     //==============================================================================
-    bool isCurrentlySaving() const noexcept     { return isSaving; }
+    bool isCurrentlySaving() const noexcept        { return isSaving; }
     bool shouldWaitAfterSaving = false;
     String specifiedExporterToSave = {};
+
+    //==============================================================================
+    bool isTemporaryProject() const noexcept             { return tempDirectory != File(); }
+    File getTemporaryDirectory() const noexcept          { return tempDirectory; }
+    void setTemporaryDirectory (const File&) noexcept;
+
+    void setOpenInIDEAfterSaving (bool open) noexcept    { openInIDEAfterSaving = open; }
+    bool shouldOpenInIDEAfterSaving() const noexcept     { return openInIDEAfterSaving; }
+
+    //==============================================================================
+    bool shouldSendGUIBuilderAnalyticsEvent() noexcept;
 
 private:
     ValueTree projectRoot  { Ids::JUCERPROJECT };
@@ -348,6 +360,17 @@ private:
                      pluginIsMidiEffectPluginValue, pluginEditorNeedsKeyFocusValue, pluginVSTCategoryValue, pluginAUExportPrefixValue,
                      pluginAUMainTypeValue, pluginRTASCategoryValue, pluginRTASBypassDisabledValue, pluginRTASMultiMonoDisabledValue,
                      pluginAAXIdentifierValue, pluginAAXCategoryValue, pluginAAXBypassDisabledValue, pluginAAXMultiMonoDisabledValue;
+
+    //==============================================================================
+    File tempDirectory = {};
+    bool openInIDEAfterSaving = false;
+
+    void askUserWhereToSaveProject();
+    void moveTemporaryDirectory (const File&);
+    bool saveProjectRootToFile();
+
+    //==============================================================================
+    bool hasSentGUIBuilderAnalyticsEvent = false;
 
     //==============================================================================
     friend class Item;
