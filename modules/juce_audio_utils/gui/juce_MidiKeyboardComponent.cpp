@@ -196,55 +196,6 @@ void MidiKeyboardComponent::setVelocity (float v, bool useMousePosition)
 //==============================================================================
 
 
-#if JUCE_IOS
-Range<float> MidiKeyboardComponent::getKeyPosition (float midiNoteNumber, const float keyWidth_) const
-{
-    jassert (midiNoteNumber >= 0 && midiNoteNumber < 128);
-    
-    static const float blackNoteWidth = 0.7f;
-    
-    static const float notePos[] = { 0.0f, 1 - blackNoteWidth * 0.6f,
-        1.0f, 2 - blackNoteWidth * 0.4f,
-        2.0f,
-        3.0f, 4 - blackNoteWidth * 0.7f,
-        4.0f, 5 - blackNoteWidth * 0.5f,
-        5.0f, 6 - blackNoteWidth * 0.3f,
-        6.0f,
-        7.0f};
-    
-    float noteDivOctave = midiNoteNumber / 12.0;
-    const int octave = (int) noteDivOctave;
-    const float noteFloat = 12.0 * (float)(noteDivOctave - octave);
-    
-//    int note = (int)noteFloat;
-//    float noteRemainder = noteFloat - (float)note;
-//    float noteForX = notePos[note] + noteRemainder * (notePos[note + 1] - notePos[note]);
-    
-    auto note = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
-    float noteRemainder = noteFloat - (float)note;
-    float noteForX = notePos[note] + noteRemainder * (notePos[note + 1] - notePos[note]);
-    auto start = roundToInt (octave * 7.0f * keyWidth_ + noteForX * keyWidth_);
-    
-//    x = roundToInt (octave * 7.0f * keyWidth_ + noteForX * keyWidth_);
-//    w = roundToInt (MidiMessage::isMidiNoteBlack ((int)midiNoteNumber % 12) ? blackNoteWidth * keyWidth_ : keyWidth_);
-    
-    return { float(start), float(note)};
-}
-
-Range<float> MidiKeyboardComponent::getKeyPos (float midiNoteNumber) const
-{
-    return getKeyPosition (midiNoteNumber, keyWidth)
-    - xOffset
-    - getKeyPosition (rangeStart, keyWidth).getStart();
-//    getKeyPosition (midiNoteNumber, keyWidth, x, w);
-//
-//    int rx, rw;
-//    getKeyPosition (rangeStart, keyWidth, rx, rw);
-//
-//    x -= xOffset + rx;
-}
-#else
-
 Range<float> MidiKeyboardComponent::getKeyPosition (int midiNoteNumber, float targetKeyWidth) const
 {
     jassert (midiNoteNumber >= 0 && midiNoteNumber < 128);
@@ -272,7 +223,6 @@ Range<float> MidiKeyboardComponent::getKeyPos (int midiNoteNumber) const
              - xOffset
              - getKeyPosition (rangeStart, keyWidth).getStart();
 }
-#endif
 
 Rectangle<float> MidiKeyboardComponent::getRectangleForKey (int note) const
 {

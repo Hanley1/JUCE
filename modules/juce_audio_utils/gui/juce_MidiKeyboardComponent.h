@@ -396,11 +396,7 @@ protected:
         @returns                the start and length of the key along the axis of the keyboard
     */
     
-#if JUCE_IOS
-    virtual Range<float> getKeyPosition (float midiNoteNumber, float keyWidth) const;
-#else
     virtual Range<float> getKeyPosition (int midiNoteNumber, float keyWidth) const;
-#endif
 
     /** Returns the rectangle for a given key if within the displayable range */
     Rectangle<float> getRectangleForKey (int midiNoteNumber) const;
@@ -434,12 +430,7 @@ private:
     int keyMappingOctave = 6, octaveNumForMiddleC = 3;
 
 
-#if JUCE_IOS
-    Range<float> getKeyPos (float midiNoteNumber) const;
-#else
     Range<float> getKeyPos (int midiNoteNumber) const;
-#endif
-
     int xyToNote (Point<float>, float& mousePositionVelocity);
     int remappedXYToNote (Point<float>, float& mousePositionVelocity) const;
     void resetAnyKeysInUse();
