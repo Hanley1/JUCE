@@ -57,7 +57,9 @@ void Analytics::logEvent (const String& eventName,
         {
             eventName,
             eventType,
-            Time::getMillisecondCounter(),
+            //Time::getMillisecondCounter(),
+            Time::currentTimeMillis(),
+            //Time::getCurrentTime(),
             parameters,
             userId,
             userProperties
