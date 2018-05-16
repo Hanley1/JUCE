@@ -64,7 +64,8 @@ struct JUCE_API  AnalyticsDestination
             do not represent absolute times, but relative timings of events for
             each user in each session will be accurate.
         */
-        uint32 timestamp;
+        //uint32 timestamp;
+        int64 timestamp;
 
         /** The parameters of the event. */
         StringPairArray parameters;
