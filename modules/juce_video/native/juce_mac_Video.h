@@ -45,7 +45,7 @@ struct VideoComponent::Pimpl   : public BaseClass
         [view setLayer: controller];
         [view release];
        #elif JUCE_MAC
-        controller = [[AVPlayerView alloc] init];
+        controller = [[MyAVPlayerView alloc] init];
         // pch 1/15/18 gets rid of internal slider on videos
         controller.controlsStyle = AVPlayerViewControlsStyleNone;
         setView (controller);

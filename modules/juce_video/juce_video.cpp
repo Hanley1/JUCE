@@ -40,9 +40,16 @@
 
 #include "juce_video.h"
 
+
+
 #if JUCE_MAC || JUCE_IOS
  #import <AVFoundation/AVFoundation.h>
  #import <AVKit/AVKit.h>
+
+#if JUCE_MAC
+#include "native/myAVPlayer.h"
+#endif
+
 
 //==============================================================================
 #elif JUCE_MSVC
