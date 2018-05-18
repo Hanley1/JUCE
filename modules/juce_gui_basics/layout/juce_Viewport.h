@@ -263,6 +263,9 @@ public:
         @see setScrollOnDragEnabled
     */
     bool isCurrentlyScrollingOnDrag() const noexcept;
+    
+    void setAllowVerticalDrag(bool allow);
+    void setAllowHorizontalDrag(bool allow);
 
     //==============================================================================
     /** @internal */
