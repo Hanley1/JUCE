@@ -46,7 +46,9 @@ VideoComponent::~VideoComponent()
     
 void VideoComponent::showPlaybackControls(bool show)
 {
+#if JUCE_IOS || JUCE_MAC
     pimpl->showPlaybackControls(show);
+#endif
 }
 
 Result VideoComponent::load (const File& file)
