@@ -71,10 +71,13 @@ struct VideoComponent::Pimpl   : public BaseClass
 #if JUCE_IOS
         controller.showsPlaybackControls = show;
 #else
+        
+#ifndef IS_PRIMER
         if (show)
             controller.controlsStyle = AVPlayerViewControlsStyleInline;
         else
             controller.controlsStyle = AVPlayerViewControlsStyleNone;
+#endif
 #endif
         
     }
