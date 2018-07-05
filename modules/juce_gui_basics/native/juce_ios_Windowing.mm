@@ -39,7 +39,10 @@ namespace juce
 }
 
 //#import<DropboxSDK/DropboxSDK.h>
+
+#ifndef IS_PRIMER
 #import <ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h>
+#endif
 
 #if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 @interface JuceAppStartupDelegate : NSObject <UIApplicationDelegate, UNUserNotificationCenterDelegate>
@@ -107,10 +110,12 @@ namespace juce
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     
+#ifndef IS_PRIMER
 #if SPANISH
     [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
 #else
     [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
+#endif
 #endif
 
     NSObject* _pushNotificationsDelegate;
@@ -242,6 +247,8 @@ namespace juce
 
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url
             options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    
+#ifndef IS_PRIMER
     DBOAuthResult *authResult = [DBClientsManager handleRedirectURL:url];
     if (authResult != nil) {
         if ([authResult isSuccess]) {
@@ -253,6 +260,7 @@ namespace juce
         }
     }
     return NO;
+#endif
 }
 
 //- (BOOL)application:(UIApplication*)app openURL:(NSURL*)url
