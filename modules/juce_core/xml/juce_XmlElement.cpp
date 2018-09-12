@@ -506,6 +506,15 @@ int XmlElement::getIntAttribute (StringRef attributeName, const int defaultRetur
     return defaultReturnValue;
 }
 
+int64 XmlElement::getInt64Attribute (StringRef attributeName, const int64 defaultReturnValue) const
+{
+    if (auto* att = getAttribute (attributeName))
+        return att->value.getLargeIntValue();
+    
+    return defaultReturnValue;
+}
+
+        
 double XmlElement::getDoubleAttribute (StringRef attributeName, const double defaultReturnValue) const
 {
     if (auto* att = getAttribute (attributeName))

@@ -345,6 +345,8 @@ public:
         @see setAttribute
     */
     int getIntAttribute (StringRef attributeName, int defaultReturnValue = 0) const;
+    
+    int64 getInt64Attribute (StringRef attributeName, int64 defaultReturnValue = 0) const;
 
     /** Returns the value of a named attribute as floating-point.
 
