@@ -33,7 +33,6 @@ static const uint8 blackNotes[] = { 1, 3, 6, 8, 10 };
 
 struct MidiKeyboardComponent::UpDownButton  : public Button
 {
-public:
     UpDownButton (MidiKeyboardComponent& c, int d)
         : Button ({}), owner (c), delta (d)
     {
@@ -105,6 +104,17 @@ void MidiKeyboardComponent::setKeyWidth (float widthInPixels)
     if (keyWidth != widthInPixels) // Prevent infinite recursion if the width is being computed in a 'resized()' call-back
     {
         keyWidth = widthInPixels;
+        resized();
+    }
+}
+
+void MidiKeyboardComponent::setScrollButtonWidth (int widthInPixels)
+{
+    jassert (widthInPixels > 0);
+
+    if (scrollButtonWidth != widthInPixels)
+    {
+        scrollButtonWidth = widthInPixels;
         resized();
     }
 }
@@ -194,8 +204,6 @@ void MidiKeyboardComponent::setVelocity (float v, bool useMousePosition)
 }
 
 //==============================================================================
-
-
 Range<float> MidiKeyboardComponent::getKeyPosition (int midiNoteNumber, float targetKeyWidth) const
 {
     jassert (midiNoteNumber >= 0 && midiNoteNumber < 128);
@@ -310,7 +318,7 @@ int MidiKeyboardComponent::remappedXYToNote (Point<float> pos, float& mousePosit
                 {
                     if (getKeyPos (note).contains (pos.x - xOffset))
                     {
-                        mousePositionVelocity = pos.y / blackNoteLength;
+                        mousePositionVelocity = jmax (0.0f, pos.y / blackNoteLength);
                         return note;
                     }
                 }
@@ -329,7 +337,7 @@ int MidiKeyboardComponent::remappedXYToNote (Point<float> pos, float& mousePosit
                 if (getKeyPos (note).contains (pos.x - xOffset))
                 {
                     auto whiteNoteLength = (orientation == horizontalKeyboard) ? getHeight() : getWidth();
-                    mousePositionVelocity = pos.y / (float) whiteNoteLength;
+                    mousePositionVelocity = jmax (0.0f, pos.y / (float) whiteNoteLength);
                     return note;
                 }
             }
@@ -613,9 +621,7 @@ void MidiKeyboardComponent::resized()
 
         if (canScroll)
         {
-#ifndef JUCE_IOS
-
-            auto scrollButtonW = jmin (12, w / 2);
+            auto scrollButtonW = jmin (scrollButtonWidth, w / 2);
             auto r = getLocalBounds();
 
             if (orientation == horizontalKeyboard)
@@ -633,7 +639,6 @@ void MidiKeyboardComponent::resized()
                 scrollDown->setBounds (r.removeFromBottom (scrollButtonW));
                 scrollUp  ->setBounds (r.removeFromTop    (scrollButtonW));
             }
-#endif
 
             auto endOfLastKey = getKeyPos (rangeEnd).getEnd();
 
@@ -647,16 +652,7 @@ void MidiKeyboardComponent::resized()
                 sendChangeMessage();
             }
 
-            int newOffset = 0;
-            
-#if JUCE_IOS
-//            getKeyPos (firstKey, newOffset, kw);
-//            xOffset = newOffset;
-            xOffset = getKeyPos (firstKey).getStart();
-#else
             xOffset = getKeyPos ((int) firstKey).getStart();
-            xOffset = xOffset - scrollButtonW; // this fixes the uneven alignment introduced in a previous JUCE update
-#endif
         }
         else
         {
@@ -716,7 +712,7 @@ void MidiKeyboardComponent::updateNoteUnderMouse (Point<float> pos, bool isDown,
     auto newNote = xyToNote (pos, mousePositionVelocity);
     auto oldNote = mouseOverNotes.getUnchecked (fingerNum);
     auto oldNoteDown = mouseDownNotes.getUnchecked (fingerNum);
-    auto eventVelocity = useMousePositionForVelocity ? mousePositionVelocity * velocity : velocity;
+    auto eventVelocity = useMousePositionForVelocity ? mousePositionVelocity * velocity : 1.0f;
 
     if (oldNote != newNote)
     {
