@@ -540,25 +540,25 @@ void CoreGraphicsContext::drawImage (const Image& sourceImage, const AffineTrans
 //==============================================================================
 void CoreGraphicsContext::drawLine (const Line<float>& line)
 {
-    if (state->fillType.isColour())
-    {
-        CGContextSetLineCap (context, kCGLineCapSquare);
-        CGContextSetLineWidth (context, 1.0f);
-        CGContextSetRGBStrokeColor (context,
-                                    state->fillType.colour.getFloatRed(), state->fillType.colour.getFloatGreen(),
-                                    state->fillType.colour.getFloatBlue(), state->fillType.colour.getFloatAlpha());
-
-        CGPoint cgLine[] = { { (CGFloat) line.getStartX(), flipHeight - (CGFloat) line.getStartY() },
-                             { (CGFloat) line.getEndX(),   flipHeight - (CGFloat) line.getEndY()   } };
-
-        CGContextStrokeLineSegments (context, cgLine, 1);
-    }
-    else
-    {
+//    if (state->fillType.isColour())
+//    {
+//        CGContextSetLineCap (context, kCGLineCapSquare);
+//        CGContextSetLineWidth (context, 1.0f);
+//        CGContextSetRGBStrokeColor (context,
+//                                    state->fillType.colour.getFloatRed(), state->fillType.colour.getFloatGreen(),
+//                                    state->fillType.colour.getFloatBlue(), state->fillType.colour.getFloatAlpha());
+//
+//        CGPoint cgLine[] = { { (CGFloat) line.getStartX(), flipHeight - (CGFloat) line.getStartY() },
+//                             { (CGFloat) line.getEndX(),   flipHeight - (CGFloat) line.getEndY()   } };
+//
+//        CGContextStrokeLineSegments (context, cgLine, 1);
+//    }
+//    else
+//    {
         Path p;
         p.addLineSegment (line, 1.0f);
         fillPath (p, AffineTransform());
-    }
+//    }
 }
 
 void CoreGraphicsContext::fillRectList (const RectangleList<float>& list)
