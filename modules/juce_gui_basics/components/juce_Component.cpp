@@ -1009,7 +1009,7 @@ int Component::getParentHeight() const noexcept
 
 Rectangle<int> Component::getParentMonitorArea() const
 {
-    return Desktop::getInstance().getDisplays().getDisplayContaining (getScreenBounds().getCentre()).userArea;
+    return Desktop::getInstance().getDisplays().findDisplayForRect (getScreenBounds()).userArea;
 }
 
 int Component::getScreenX() const                       { return getScreenPosition().x; }
@@ -1345,6 +1345,8 @@ void Component::addChildComponent (Component& child, int zOrder)
     // if component methods are being called from threads other than the message
     // thread, you'll need to use a MessageManagerLock object to make sure it's thread-safe.
     ASSERT_MESSAGE_MANAGER_IS_LOCKED_OR_OFFSCREEN
+
+    jassert (this != &child); // adding a component to itself!?
 
     if (child.parentComponent != this)
     {
@@ -2013,8 +2015,8 @@ void Component::setComponentEffect (ImageEffectFilter* newEffect)
 LookAndFeel& Component::getLookAndFeel() const noexcept
 {
     for (auto* c = this; c != nullptr; c = c->parentComponent)
-        if (c->lookAndFeel != nullptr)
-            return *(c->lookAndFeel);
+        if (auto lf = c->lookAndFeel.get())
+            return *lf;
 
     return LookAndFeel::getDefaultLookAndFeel();
 }

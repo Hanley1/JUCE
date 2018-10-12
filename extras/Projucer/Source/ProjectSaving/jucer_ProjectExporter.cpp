@@ -329,25 +329,26 @@ void ProjectExporter::createPropertyEditors (PropertyListBuilder& props)
 
 void ProjectExporter::createDependencyPathProperties (PropertyListBuilder& props)
 {
-    if (shouldBuildTargetType (ProjectType::Target::VST3PlugIn) || project.isVST3PluginHost())
+    if (shouldBuildTargetType (ProjectType::Target::VST3PlugIn) && project.shouldBuildVST3())
     {
-        if (dynamic_cast<DependencyPathValueSource*> (&getVST3PathValue().getValueSource()) != nullptr)
+        if (dynamic_cast<DependencyPathValueSource*> (&getAAXPathValue().getValueSource()) != nullptr)
             props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), getVST3PathValue(), "VST3 SDK Folder"),
-                       "If you're building a VST3 plugin or host, this must be the folder containing the VST3 SDK. This can be an absolute path, or a path relative to the Projucer project file.");
+                       "If you're building a VST3 plug-in, you can use this field to override the global VST3 SDK path with a project-specific path. "
+                       "This can be an absolute path, or a path relative to the Projucer project file.");
     }
 
     if (shouldBuildTargetType (ProjectType::Target::AAXPlugIn) && project.shouldBuildAAX())
     {
         if (dynamic_cast<DependencyPathValueSource*> (&getAAXPathValue().getValueSource()) != nullptr)
             props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), getAAXPathValue(), "AAX SDK Folder"),
-                       "If you're building an AAX plugin, this must be the folder containing the AAX SDK. This can be an absolute path, or a path relative to the Projucer project file.");
+                       "If you're building an AAX plug-in, this must be the folder containing the AAX SDK. This can be an absolute path, or a path relative to the Projucer project file.");
     }
 
     if (shouldBuildTargetType (ProjectType::Target::RTASPlugIn) && project.shouldBuildRTAS())
     {
         if (dynamic_cast<DependencyPathValueSource*> (&getRTASPathValue().getValueSource()) != nullptr)
             props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), getRTASPathValue(), "RTAS SDK Folder"),
-                       "If you're building an RTAS, this must be the folder containing the RTAS SDK. This can be an absolute path, or a path relative to the Projucer project file.");
+                       "If you're building an RTAS plug-in, this must be the folder containing the RTAS SDK. This can be an absolute path, or a path relative to the Projucer project file.");
     }
 }
 
@@ -388,7 +389,8 @@ void ProjectExporter::addSettingsForProjectType (const ProjectType& type)
 
 void ProjectExporter::addVSTPathsIfPluginOrHost()
 {
-    if (shouldBuildTargetType (ProjectType::Target::VST3PlugIn) || project.isVST3PluginHost())
+    if (shouldBuildTargetType (ProjectType::Target::VST3PlugIn) || project.isVST3PluginHost()
+         || shouldBuildTargetType (ProjectType::Target::VSTPlugIn) || project.isVSTPluginHost())
         addVST3FolderToPath();
 }
 
@@ -400,12 +402,21 @@ void ProjectExporter::addCommonAudioPluginSettings()
     // Note: RTAS paths are platform-dependent, impl -> addPlatformSpecificSettingsForProjectType
  }
 
+RelativePath ProjectExporter::getInternalVST3SDKPath()
+{
+    return getModuleFolderRelativeToProject ("juce_audio_processors")
+                           .getChildFile ("format_types")
+                           .getChildFile ("VST3_SDK");
+}
+
 void ProjectExporter::addVST3FolderToPath()
 {
     auto vst3Folder = getVST3PathValue().toString();
 
     if (vst3Folder.isNotEmpty())
         addToExtraSearchPaths (RelativePath (vst3Folder, RelativePath::projectFolder), 0);
+    else
+        addToExtraSearchPaths (getInternalVST3SDKPath(), 0);
 }
 
 void ProjectExporter::addAAXFoldersToPath()
@@ -414,7 +425,7 @@ void ProjectExporter::addAAXFoldersToPath()
 
     if (aaxFolder.isNotEmpty())
     {
-        RelativePath aaxFolderPath (getAAXPathValue().toString(), RelativePath::projectFolder);
+        RelativePath aaxFolderPath (aaxFolder, RelativePath::projectFolder);
 
         addToExtraSearchPaths (aaxFolderPath);
         addToExtraSearchPaths (aaxFolderPath.getChildFile ("Interfaces"));
@@ -450,7 +461,8 @@ void ProjectExporter::addTargetSpecificPreprocessorDefs (StringPairArray& defs, 
         {"JucePlugin_Build_AUv3",       ProjectType::Target::AudioUnitv3PlugIn},
         {"JucePlugin_Build_RTAS",       ProjectType::Target::RTASPlugIn},
         {"JucePlugin_Build_AAX",        ProjectType::Target::AAXPlugIn},
-        {"JucePlugin_Build_Standalone", ProjectType::Target::StandalonePlugIn}
+        {"JucePlugin_Build_Standalone", ProjectType::Target::StandalonePlugIn},
+        {"JucePlugin_Build_Unity",      ProjectType::Target::UnityPlugIn}
     };
 
     if (targetType == ProjectType::Target::SharedCodeTarget)
@@ -540,7 +552,7 @@ String ProjectExporter::getPathForModuleString (const String& moduleID) const
     auto exporterPath = settings.getChildWithName (Ids::MODULEPATHS)
                                 .getChildWithProperty (Ids::ID, moduleID) [Ids::path].toString();
 
-    if (exporterPath.isEmpty() || project.getModules().shouldUseGlobalPath (moduleID))
+    if (exporterPath.isEmpty() || project.getEnabledModules().shouldUseGlobalPath (moduleID))
     {
         auto id = isJUCEModule (moduleID) ? Ids::defaultJuceModulePath
                                           : Ids::defaultUserModulePath;
@@ -569,17 +581,17 @@ TargetOS::OS ProjectExporter::getTargetOSForExporter() const
 {
     auto targetOS = TargetOS::unknown;
 
-    if      (isWindows())            targetOS = TargetOS::windows;
-    else if (isOSX() || isiOS())     targetOS = TargetOS::osx;
-    else if (isLinux())              targetOS = TargetOS::linux;
-    else if (isAndroid())            targetOS = TargetOS::getThisOS();
+    if      (isWindows())                 targetOS = TargetOS::windows;
+    else if (isOSX() || isiOS())          targetOS = TargetOS::osx;
+    else if (isLinux())                   targetOS = TargetOS::linux;
+    else if (isAndroid() || isCLion())    targetOS = TargetOS::getThisOS();
 
     return targetOS;
 }
 
 RelativePath ProjectExporter::getModuleFolderRelativeToProject (const String& moduleID) const
 {
-    if (project.getModules().shouldCopyModuleFilesLocally (moduleID).getValue())
+    if (project.getEnabledModules().shouldCopyModuleFilesLocally (moduleID).getValue())
         return RelativePath (project.getRelativePathForFile (project.getLocalModuleFolder (moduleID)),
                              RelativePath::projectFolder);
 
@@ -598,7 +610,7 @@ String ProjectExporter::getLegacyModulePath() const
 
 RelativePath ProjectExporter::getLegacyModulePath (const String& moduleID) const
 {
-    if (project.getModules().state.getChildWithProperty (Ids::ID, moduleID) ["useLocalCopy"])
+    if (project.getEnabledModules().state.getChildWithProperty (Ids::ID, moduleID) ["useLocalCopy"])
         return RelativePath (project.getRelativePathForFile (project.getGeneratedCodeFolder()
                                                                 .getChildFile ("modules")
                                                                 .getChildFile (moduleID)), RelativePath::projectFolder);
@@ -621,9 +633,9 @@ void ProjectExporter::updateOldModulePaths()
 
     if (oldPath.isNotEmpty())
     {
-        for (int i = project.getModules().getNumModules(); --i >= 0;)
+        for (int i = project.getEnabledModules().getNumModules(); --i >= 0;)
         {
-            auto modID = project.getModules().getModuleID(i);
+            auto modID = project.getEnabledModules().getModuleID(i);
             getPathForModuleValue (modID) = getLegacyModulePath (modID).getParentDirectory().toUnixStyle();
         }
 
@@ -646,9 +658,9 @@ void ProjectExporter::createDefaultModulePaths()
     {
         if (areCompatibleExporters (*this, *exporter))
         {
-            for (int i = project.getModules().getNumModules(); --i >= 0;)
+            for (int i = project.getEnabledModules().getNumModules(); --i >= 0;)
             {
-                auto modID = project.getModules().getModuleID (i);
+                auto modID = project.getEnabledModules().getModuleID (i);
                 getPathForModuleValue (modID) = exporter->getPathForModuleValue (modID).getValue();
             }
 
@@ -660,9 +672,9 @@ void ProjectExporter::createDefaultModulePaths()
     {
         if (exporter->canLaunchProject())
         {
-            for (int i = project.getModules().getNumModules(); --i >= 0;)
+            for (int i = project.getEnabledModules().getNumModules(); --i >= 0;)
             {
-                auto modID = project.getModules().getModuleID (i);
+                auto modID = project.getEnabledModules().getModuleID (i);
                 getPathForModuleValue (modID) = exporter->getPathForModuleValue (modID).getValue();
             }
 
@@ -670,9 +682,9 @@ void ProjectExporter::createDefaultModulePaths()
         }
     }
 
-    for (int i = project.getModules().getNumModules(); --i >= 0;)
+    for (int i = project.getEnabledModules().getNumModules(); --i >= 0;)
     {
-        auto modID = project.getModules().getModuleID (i);
+        auto modID = project.getEnabledModules().getModuleID (i);
         getPathForModuleValue (modID) = "../../juce";
     }
 }
@@ -731,7 +743,7 @@ void ProjectExporter::addNewConfigurationFromExisting (const BuildConfiguration&
     ValueTree newConfig (Ids::CONFIGURATION);
     newConfig = configToCopy.config.createCopy();
 
-    newConfig.setProperty (Ids::name, configToCopy.getName(), 0);
+    newConfig.setProperty (Ids::name, configToCopy.getName(), nullptr);
 
     configs.appendChild (newConfig, project.getUndoManagerFor (configs));
 }

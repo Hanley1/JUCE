@@ -118,8 +118,11 @@
 
 //==============================================================================
 #include "containers/juce_AbstractFifo.cpp"
+#include "containers/juce_ArrayBase.cpp"
 #include "containers/juce_NamedValueSet.cpp"
+#include "containers/juce_OwnedArray.cpp"
 #include "containers/juce_PropertySet.cpp"
+#include "containers/juce_ReferenceCountedArray.cpp"
 #include "containers/juce_SparseSet.cpp"
 #include "containers/juce_Variant.cpp"
 #include "files/juce_DirectoryIterator.cpp"
@@ -141,6 +144,7 @@
 #include "misc/juce_Result.cpp"
 #include "misc/juce_Uuid.cpp"
 #include "misc/juce_StdFunctionCompat.cpp"
+#include "misc/juce_ConsoleApplication.cpp"
 #include "network/juce_MACAddress.cpp"
 #include "network/juce_NamedPipe.cpp"
 #include "network/juce_Socket.cpp"
@@ -187,6 +191,7 @@
 //==============================================================================
 #if JUCE_MAC || JUCE_IOS
 #include "native/juce_mac_Files.mm"
+#include "native/juce_mac_linux_IPAddress.h"
 #include "native/juce_mac_Network.mm"
 #include "native/juce_mac_Strings.mm"
 #include "native/juce_mac_SystemStats.mm"
@@ -204,6 +209,7 @@
 #elif JUCE_LINUX
 #include "native/juce_linux_CommonFile.cpp"
 #include "native/juce_linux_Files.cpp"
+#include "native/juce_mac_linux_IPAddress.h"
 #include "native/juce_linux_Network.cpp"
 #if JUCE_USE_CURL
  #include "native/juce_curl_Network.cpp"

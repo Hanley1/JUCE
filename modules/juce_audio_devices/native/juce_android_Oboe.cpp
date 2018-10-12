@@ -505,7 +505,7 @@ private:
 
             static int defaultFramesPerBurst = getDefaultFramesPerBurst();
 
-            // Note: letting OS to choose the buffer capacity & frames per callback.
+            // Note: Letting OS to choose the buffer capacity & frames per callback.
             builder.setDirection (direction);
             builder.setSharingMode (sharingMode);
             builder.setChannelCount (channelCount);
@@ -676,7 +676,6 @@ private:
                 ignoreUnused (deviceId, numChannels, sampleRate, bufferSize);
                 ignoreUnused (streamFormat, bitDepth);
 
-                jassert (deviceId = nativeStream->getDeviceId());
                 jassert (numChannels = nativeStream->getChannelCount());
                 jassert (sampleRate == nativeStream->getSampleRate());
                 jassert (format == nativeStream->getFormat());
@@ -797,13 +796,13 @@ private:
 
                     auto result = inputStream->getNativeStream()->read (inputStreamNativeBuffer.getData(), numFrames, 0);
 
-                    if (result >= 0)
+                    if (result)
                     {
                         OboeAudioIODeviceBufferHelpers<SampleType>::referAudioBufferDirectlyToOboeIfPossible (inputStreamNativeBuffer.get(),
                                                                                                               inputStreamSampleBuffer,
-                                                                                                              result);
+                                                                                                              result.value());
 
-                        OboeAudioIODeviceBufferHelpers<SampleType>::convertFromOboe (inputStreamNativeBuffer.get(), inputStreamSampleBuffer, result);
+                        OboeAudioIODeviceBufferHelpers<SampleType>::convertFromOboe (inputStreamNativeBuffer.get(), inputStreamSampleBuffer, result.value());
                     }
                     else
                     {
