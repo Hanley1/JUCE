@@ -96,6 +96,7 @@ public:
     void createNewPIP();
     void askUserToOpenFile();
     bool openFile (const File&);
+    void saveAllDocuments();
     bool closeAllDocuments (bool askUserToSave);
     bool closeAllMainWindows();
     void closeAllMainWindowsAndQuitIfNeeded();
@@ -139,6 +140,13 @@ public:
     void setAnalyticsEnabled (bool);
 
     //==============================================================================
+    void rescanJUCEPathModules();
+    void rescanUserPathModules();
+
+    AvailableModuleList& getJUCEPathModuleList()     { return jucePathModuleList; }
+    AvailableModuleList& getUserPathsModuleList()    { return userPathsModuleList; }
+
+    //==============================================================================
     ProjucerLookAndFeel lookAndFeel;
 
     std::unique_ptr<StoredSettings> settings;
@@ -152,7 +160,7 @@ public:
     std::unique_ptr<ApplicationCommandManager> commandManager;
 
     std::unique_ptr<Component> utf8Window, svgPathWindow, aboutWindow, applicationUsageDataWindow,
-                             pathsWindow, editorColourSchemeWindow, pipCreatorWindow;
+                               pathsWindow, editorColourSchemeWindow, pipCreatorWindow;
 
     std::unique_ptr<FileLogger> logger;
 
@@ -202,6 +210,8 @@ private:
 
     void showSetJUCEPathAlert();
     std::unique_ptr<AlertWindow> pathAlert;
+
+    AvailableModuleList jucePathModuleList, userPathsModuleList;
 
     //==============================================================================
     void setColourScheme (int index, bool saveSetting);

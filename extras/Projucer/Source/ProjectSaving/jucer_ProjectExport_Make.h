@@ -78,7 +78,7 @@ protected:
 
     BuildConfiguration::Ptr createBuildConfig (const ValueTree& tree) const override
     {
-        return new MakeBuildConfiguration (project, tree, *this);
+        return *new MakeBuildConfiguration (project, tree, *this);
     }
 
 public:
@@ -179,6 +179,7 @@ public:
             switch (type)
             {
                 case VSTPlugIn:
+                case UnityPlugIn:
                 case DynamicLibrary:        return ".so";
                 case SharedCodeTarget:
                 case StaticLibrary:         return ".a";
@@ -362,6 +363,7 @@ public:
             case ProjectType::Target::VSTPlugIn:
             case ProjectType::Target::StandalonePlugIn:
             case ProjectType::Target::DynamicLibrary:
+            case ProjectType::Target::UnityPlugIn:
                 return true;
             default:
                 break;
@@ -419,9 +421,6 @@ public:
         jassert (targets.size() > 0);
     }
 
-    //==============================================================================
-    void initialiseDependencyPathValues() override  {}
-
 private:
     ValueWithDefault extraPkgConfigValue;
 
@@ -460,6 +459,10 @@ private:
             packages.add ("webkit2gtk-4.0");
             packages.add ("gtk+-x11-3.0");
         }
+
+        // don't add libcurl if curl symbols are loaded at runtime
+        if (! isLoadCurlSymbolsLazilyEnabled())
+            packages.add ("libcurl");
 
         packages.removeDuplicates (false);
 
@@ -597,8 +600,16 @@ private:
     {
         static String guiExtrasModule ("juce_gui_extra");
 
-        return (project.getModules().isModuleEnabled (guiExtrasModule)
+        return (project.getEnabledModules().isModuleEnabled (guiExtrasModule)
                 && project.isConfigFlagEnabled ("JUCE_WEB_BROWSER", true));
+    }
+
+    bool isLoadCurlSymbolsLazilyEnabled() const
+    {
+        static String juceCoreModule ("juce_core");
+
+        return (project.getEnabledModules().isModuleEnabled (juceCoreModule)
+                && project.isConfigFlagEnabled ("JUCE_LOAD_CURL_SYMBOLS_LAZILY", false));
     }
 
     //==============================================================================

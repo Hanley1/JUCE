@@ -77,8 +77,8 @@ public:
 
         props.add (new TextPropertyComponent (targetPlatformVersion, "Windows Target Platform", 20, false),
                    String ("Specifies the version of the Windows SDK that will be used when building this project. ")
-                   + (isWindows10SDK ? "You can see which SDKs you have installed on your machine by going to \"Program Files (x86)\\Windows Kits\\10\\Lib\". " : "")
-                   + "The default value for this exporter is " + getDefaultWindowsTargetPlatformVersion());
+                   + (isWindows10SDK ? "Leave this field empty to use the latest Windows 10 SDK installed on the build machine."
+                                     : "The default value for this exporter is " + getDefaultWindowsTargetPlatformVersion()));
     }
 
     void addPlatformToolsetToPropertyGroup (XmlElement& p) const
@@ -89,8 +89,23 @@ public:
 
     void addWindowsTargetPlatformVersionToPropertyGroup (XmlElement& p) const
     {
-        forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
-        e->createNewChildElement ("WindowsTargetPlatformVersion")->addTextElement (getWindowsTargetPlatformVersion());
+        auto target = getWindowsTargetPlatformVersion();
+
+        if (target == "Latest")
+        {
+            forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
+            {
+                auto* child = e->createNewChildElement ("WindowsTargetPlatformVersion");
+
+                child->setAttribute ("Condition", "'$(WindowsTargetPlatformVersion)' == ''");
+                child->addTextElement ("$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))");
+            }
+        }
+        else
+        {
+            forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
+            e->createNewChildElement ("WindowsTargetPlatformVersion")->addTextElement (target);
+        }
     }
 
     void addIPPSettingToPropertyGroup (XmlElement& p) const
@@ -121,17 +136,9 @@ public:
     //==============================================================================
     void initialiseDependencyPathValues() override
     {
-        vst3Path.referTo (Value (new DependencyPathValueSource (getSetting (Ids::vst3Folder),
-                                                                Ids::vst3Path,
-                                                                TargetOS::windows)));
-
-        aaxPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::aaxFolder),
-                                                               Ids::aaxPath,
-                                                               TargetOS::windows)));
-
-        rtasPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::rtasFolder),
-                                                                Ids::rtasPath,
-                                                                TargetOS::windows)));
+        vst3Path.referTo (Value (new DependencyPathValueSource (getSetting (Ids::vst3Folder), Ids::vst3Path, TargetOS::windows)));
+        aaxPath.referTo  (Value (new DependencyPathValueSource (getSetting (Ids::aaxFolder),  Ids::aaxPath,  TargetOS::windows)));
+        rtasPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::rtasFolder), Ids::rtasPath, TargetOS::windows)));
     }
 
     //==============================================================================
@@ -141,24 +148,26 @@ public:
     public:
         MSVCBuildConfiguration (Project& p, const ValueTree& settings, const ProjectExporter& e)
             : BuildConfiguration (p, settings, e),
-              warningLevelValue             (config, Ids::winWarningLevel,            getUndoManager(), 4),
-              warningsAreErrorsValue        (config, Ids::warningsAreErrors,          getUndoManager(), false),
-              prebuildCommandValue          (config, Ids::prebuildCommand,            getUndoManager()),
-              postbuildCommandValue         (config, Ids::postbuildCommand,           getUndoManager()),
-              generateDebugSymbolsValue     (config, Ids::alwaysGenerateDebugSymbols, getUndoManager(), false),
-              generateManifestValue         (config, Ids::generateManifest,           getUndoManager(), true),
-              enableIncrementalLinkingValue (config, Ids::enableIncrementalLinking,   getUndoManager(), false),
-              useRuntimeLibDLLValue         (config, Ids::useRuntimeLibDLL,           getUndoManager(), true),
-              intermediatesPathValue        (config, Ids::intermediatesPath,          getUndoManager()),
-              characterSetValue             (config, Ids::characterSet,               getUndoManager()),
-              architectureTypeValue         (config, Ids::winArchitecture,            getUndoManager(), get64BitArchName()),
-              fastMathValue                 (config, Ids::fastMath,                   getUndoManager()),
-              debugInformationFormatValue   (config, Ids::debugInformationFormat,     getUndoManager(), isDebug() ? "ProgramDatabase" : "None"),
-              pluginBinaryCopyStepValue     (config, Ids::enablePluginBinaryCopyStep, getUndoManager(), false),
-              vstBinaryLocation             (config, Ids::vstBinaryLocation,          getUndoManager()),
-              vst3BinaryLocation            (config, Ids::vst3BinaryLocation,         getUndoManager()),
-              rtasBinaryLocation            (config, Ids::rtasBinaryLocation,         getUndoManager()),
-              aaxBinaryLocation             (config, Ids::aaxBinaryLocation,          getUndoManager())
+              warningLevelValue              (config, Ids::winWarningLevel,            getUndoManager(), 4),
+              warningsAreErrorsValue         (config, Ids::warningsAreErrors,          getUndoManager(), false),
+              prebuildCommandValue           (config, Ids::prebuildCommand,            getUndoManager()),
+              postbuildCommandValue          (config, Ids::postbuildCommand,           getUndoManager()),
+              generateDebugSymbolsValue      (config, Ids::alwaysGenerateDebugSymbols, getUndoManager(), false),
+              generateManifestValue          (config, Ids::generateManifest,           getUndoManager(), true),
+              enableIncrementalLinkingValue  (config, Ids::enableIncrementalLinking,   getUndoManager(), false),
+              useRuntimeLibDLLValue          (config, Ids::useRuntimeLibDLL,           getUndoManager(), true),
+              multiProcessorCompilationValue (config, Ids::multiProcessorCompilation,  getUndoManager(), true),
+              intermediatesPathValue         (config, Ids::intermediatesPath,          getUndoManager()),
+              characterSetValue              (config, Ids::characterSet,               getUndoManager()),
+              architectureTypeValue          (config, Ids::winArchitecture,            getUndoManager(), get64BitArchName()),
+              fastMathValue                  (config, Ids::fastMath,                   getUndoManager()),
+              debugInformationFormatValue    (config, Ids::debugInformationFormat,     getUndoManager(), isDebug() ? "ProgramDatabase" : "None"),
+              pluginBinaryCopyStepValue      (config, Ids::enablePluginBinaryCopyStep, getUndoManager(), false),
+              vstBinaryLocation              (config, Ids::vstBinaryLocation,          getUndoManager()),
+              vst3BinaryLocation             (config, Ids::vst3BinaryLocation,         getUndoManager()),
+              rtasBinaryLocation             (config, Ids::rtasBinaryLocation,         getUndoManager()),
+              aaxBinaryLocation              (config, Ids::aaxBinaryLocation,          getUndoManager()),
+              unityPluginBinaryLocation      (config, Ids::unityPluginBinaryLocation,  getUndoManager(), {})
         {
             if (! isDebug())
                 updateOldLTOSetting();
@@ -176,33 +185,26 @@ public:
 
         String getPrebuildCommandString() const           { return prebuildCommandValue.get(); }
         String getPostbuildCommandString() const          { return postbuildCommandValue.get(); }
-
-        bool shouldGenerateDebugSymbols() const           { return generateDebugSymbolsValue.get(); }
-        bool shouldGenerateManifest() const               { return generateManifestValue.get(); }
-
-        bool shouldLinkIncremental() const                { return enableIncrementalLinkingValue.get(); }
-
-        bool isUsingRuntimeLibDLL() const                 { return useRuntimeLibDLLValue.get(); }
-
-        String getIntermediatesPathString() const         { return intermediatesPathValue.get(); }
-
-        String getCharacterSetString() const              { return characterSetValue.get(); }
-
-        String get64BitArchName() const                   { return "x64"; }
-        String get32BitArchName() const                   { return "Win32"; }
-        String getArchitectureString() const              { return architectureTypeValue.get(); }
-        bool is64Bit() const                              { return getArchitectureString() == get64BitArchName(); }
-
-        bool isFastMathEnabled() const                    { return fastMathValue.get(); }
-
-        String getDebugInformationFormatString() const    { return debugInformationFormatValue.get(); }
-
-        bool isPluginBinaryCopyStepEnabled() const        { return pluginBinaryCopyStepValue.get(); }
-
         String getVSTBinaryLocationString() const         { return vstBinaryLocation.get(); }
         String getVST3BinaryLocationString() const        { return vst3BinaryLocation.get(); }
         String getRTASBinaryLocationString() const        { return rtasBinaryLocation.get();}
         String getAAXBinaryLocationString() const         { return aaxBinaryLocation.get();}
+        String getUnityPluginBinaryLocationString() const { return unityPluginBinaryLocation.get(); }
+        String getIntermediatesPathString() const         { return intermediatesPathValue.get(); }
+        String getCharacterSetString() const              { return characterSetValue.get(); }
+        String get64BitArchName() const                   { return "x64"; }
+        String get32BitArchName() const                   { return "Win32"; }
+        String getArchitectureString() const              { return architectureTypeValue.get(); }
+        String getDebugInformationFormatString() const    { return debugInformationFormatValue.get(); }
+
+        bool shouldGenerateDebugSymbols() const           { return generateDebugSymbolsValue.get(); }
+        bool shouldGenerateManifest() const               { return generateManifestValue.get(); }
+        bool shouldLinkIncremental() const                { return enableIncrementalLinkingValue.get(); }
+        bool isUsingRuntimeLibDLL() const                 { return useRuntimeLibDLLValue.get(); }
+        bool shouldUseMultiProcessorCompilation() const   { return multiProcessorCompilationValue.get(); }
+        bool is64Bit() const                              { return getArchitectureString() == get64BitArchName(); }
+        bool isFastMathEnabled() const                    { return fastMathValue.get(); }
+        bool isPluginBinaryCopyStepEnabled() const        { return pluginBinaryCopyStepValue.get(); }
 
         //==============================================================================
         String createMSVCConfigName() const
@@ -210,9 +212,9 @@ public:
             return getName() + "|" + (is64Bit() ? "x64" : "Win32");
         }
 
-        String getOutputFilename (const String& suffix, bool forceSuffix) const
+        String getOutputFilename (const String& suffix, bool forceSuffix, bool forceUnityPrefix) const
         {
-            auto target = File::createLegalFileName (getTargetBinaryNameString().trim());
+            auto target = File::createLegalFileName (getTargetBinaryNameString (forceUnityPrefix).trim());
 
             if (forceSuffix || ! target.containsChar ('.'))
                 return target.upToLastOccurrenceOf (".", false, false) + suffix;
@@ -267,6 +269,12 @@ public:
                        "C++ runtime installed. However, if you are linking libraries from different sources you must select the same type of runtime "
                        "used by the libraries.");
 
+            props.add (new ChoicePropertyComponent (multiProcessorCompilationValue, "Multi-Processor Compilation",
+                                                    { "Enabled", "Disabled" },
+                                                    { true,      false }),
+                       "Allows the compiler to use of all the available processors, which can reduce compilation time. "
+                       "This is enabled by default and should only be disabled if you know what you are doing.");
+
             props.add (new ChoicePropertyComponent (enableIncrementalLinkingValue, "Incremental Linking"),
                        "Enable to avoid linking from scratch for every new build. "
                        "Disable to ensure that your final release build does not contain padding or thunks.");
@@ -305,10 +313,11 @@ public:
 
     private:
         ValueWithDefault warningLevelValue, warningsAreErrorsValue, prebuildCommandValue, postbuildCommandValue, generateDebugSymbolsValue,
-                         generateManifestValue, enableIncrementalLinkingValue, useRuntimeLibDLLValue, intermediatesPathValue,
-                         characterSetValue, architectureTypeValue, fastMathValue, debugInformationFormatValue, pluginBinaryCopyStepValue;
+                         generateManifestValue, enableIncrementalLinkingValue, useRuntimeLibDLLValue, multiProcessorCompilationValue,
+                         intermediatesPathValue, characterSetValue, architectureTypeValue, fastMathValue, debugInformationFormatValue,
+                         pluginBinaryCopyStepValue;
 
-        ValueWithDefault vstBinaryLocation, vst3BinaryLocation, rtasBinaryLocation, aaxBinaryLocation;
+        ValueWithDefault vstBinaryLocation, vst3BinaryLocation, rtasBinaryLocation, aaxBinaryLocation, unityPluginBinaryLocation;
 
         Value architectureValueToListenTo;
 
@@ -321,17 +330,12 @@ public:
 
         void addVisualStudioPluginInstallPathProperties (PropertyListBuilder& props)
         {
-            auto isBuildingAnyPlugins = (project.shouldBuildVST()  || project.shouldBuildVST3()
-                                      || project.shouldBuildRTAS() || project.shouldBuildAAX());
+            auto isBuildingAnyPlugins = (project.shouldBuildVST()  || project.shouldBuildVST3() || project.shouldBuildRTAS()
+                                          || project.shouldBuildAAX() || project.shouldBuildUnityPlugin());
 
             if (isBuildingAnyPlugins)
                 props.add (new ChoicePropertyComponent (pluginBinaryCopyStepValue, "Enable Plugin Copy Step"),
                            "Enable this to copy plugin binaries to a specified folder after building.");
-
-            if (project.shouldBuildVST())
-                props.add (new TextPropertyComponentWithEnablement (vstBinaryLocation, pluginBinaryCopyStepValue, "VST Binary Location",
-                                                                    1024, false),
-                           "The folder in which the compiled VST binary should be placed.");
 
             if (project.shouldBuildVST3())
                 props.add (new TextPropertyComponentWithEnablement (vst3BinaryLocation, pluginBinaryCopyStepValue, "VST3 Binary Location",
@@ -347,6 +351,16 @@ public:
                 props.add (new TextPropertyComponentWithEnablement (aaxBinaryLocation, pluginBinaryCopyStepValue, "AAX Binary Location",
                                                                     1024, false),
                            "The folder in which the compiled AAX binary should be placed.");
+
+            if (project.shouldBuildUnityPlugin())
+                props.add (new TextPropertyComponentWithEnablement (unityPluginBinaryLocation, pluginBinaryCopyStepValue, "Unity Binary Location",
+                                                                    1024, false),
+                           "The folder in which the compiled Unity plugin binary and associated C# GUI script should be placed.");
+
+            if (project.shouldBuildVST())
+                props.add (new TextPropertyComponentWithEnablement (vstBinaryLocation, pluginBinaryCopyStepValue, "VST (legacy) Binary Location",
+                                                                    1024, false),
+                           "The folder in which the compiled lehacy VST binary should be placed.");
 
         }
 
@@ -437,9 +451,6 @@ public:
 
                 if (config.shouldLinkIncremental())
                     e->createNewChildElement ("LinkIncremental")->addTextElement ("true");
-
-                if (config.is64Bit())
-                    e->createNewChildElement ("PlatformToolset")->addTextElement (getOwner().getPlatformToolset());
             }
 
             {
@@ -497,7 +508,7 @@ public:
                     {
                         auto* targetName = props->createNewChildElement ("TargetName");
                         setConditionAttribute (*targetName, config);
-                        targetName->addTextElement (config.getOutputFilename ("", false));
+                        targetName->addTextElement (config.getOutputFilename ("", false, type == UnityPlugIn));
                     }
 
                     {
@@ -558,9 +569,8 @@ public:
                     cl->createNewChildElement ("AdditionalIncludeDirectories")->addTextElement (includePaths.joinIntoString (";"));
                     cl->createNewChildElement ("PreprocessorDefinitions")->addTextElement (getPreprocessorDefs (config, ";") + ";%(PreprocessorDefinitions)");
 
-                    bool runtimeDLL = config.isUsingRuntimeLibDLL();
-                    cl->createNewChildElement ("RuntimeLibrary")->addTextElement (runtimeDLL ? (isDebug ? "MultiThreadedDebugDLL" : "MultiThreadedDLL")
-                                                                                  : (isDebug ? "MultiThreadedDebug"    : "MultiThreaded"));
+                    cl->createNewChildElement ("RuntimeLibrary")->addTextElement (config.isUsingRuntimeLibDLL() ? (isDebug ? "MultiThreadedDebugDLL" : "MultiThreadedDLL")
+                                                                                                                : (isDebug ? "MultiThreadedDebug"    : "MultiThreaded"));
                     cl->createNewChildElement ("RuntimeTypeInfo")->addTextElement ("true");
                     cl->createNewChildElement ("PrecompiledHeader");
                     cl->createNewChildElement ("AssemblerListingLocation")->addTextElement ("$(IntDir)\\");
@@ -568,7 +578,7 @@ public:
                     cl->createNewChildElement ("ProgramDataBaseFileName")->addTextElement ("$(IntDir)\\");
                     cl->createNewChildElement ("WarningLevel")->addTextElement ("Level" + String (config.getWarningLevel()));
                     cl->createNewChildElement ("SuppressStartupBanner")->addTextElement ("true");
-                    cl->createNewChildElement ("MultiProcessorCompilation")->addTextElement ("true");
+                    cl->createNewChildElement ("MultiProcessorCompilation")->addTextElement (config.shouldUseMultiProcessorCompilation() ? "true" : "false");
 
                     if (config.isFastMathEnabled())
                         cl->createNewChildElement ("FloatingPointModel")->addTextElement ("Fast");
@@ -608,12 +618,12 @@ public:
 
                 {
                     auto* link = group->createNewChildElement ("Link");
-                    link->createNewChildElement ("OutputFile")->addTextElement (getOutputFilePath (config));
+                    link->createNewChildElement ("OutputFile")->addTextElement (getOutputFilePath (config, type == UnityPlugIn));
                     link->createNewChildElement ("SuppressStartupBanner")->addTextElement ("true");
                     link->createNewChildElement ("IgnoreSpecificDefaultLibraries")->addTextElement (isDebug ? "libcmt.lib; msvcrt.lib;;%(IgnoreSpecificDefaultLibraries)"
                                                                                                             : "%(IgnoreSpecificDefaultLibraries)");
                     link->createNewChildElement ("GenerateDebugInformation")->addTextElement ((isDebug || config.shouldGenerateDebugSymbols()) ? "true" : "false");
-                    link->createNewChildElement ("ProgramDatabaseFile")->addTextElement (getOwner().getIntDirFile (config, config.getOutputFilename (".pdb", true)));
+                    link->createNewChildElement ("ProgramDatabaseFile")->addTextElement (getOwner().getIntDirFile (config, config.getOutputFilename (".pdb", true, type == UnityPlugIn)));
                     link->createNewChildElement ("SubSystem")->addTextElement (type == ConsoleApp ? "Console" : "Windows");
 
                     if (! config.is64Bit())
@@ -654,7 +664,7 @@ public:
                 {
                     auto* bsc = group->createNewChildElement ("Bscmake");
                     bsc->createNewChildElement ("SuppressStartupBanner")->addTextElement ("true");
-                    bsc->createNewChildElement ("OutputFile")->addTextElement (getOwner().getIntDirFile (config, config.getOutputFilename (".bsc", true)));
+                    bsc->createNewChildElement ("OutputFile")->addTextElement (getOwner().getIntDirFile (config, config.getOutputFilename (".bsc", true, type == UnityPlugIn)));
                 }
 
                 if (type != SharedCodeTarget)
@@ -1058,7 +1068,7 @@ public:
         //==============================================================================
         RelativePath getAAXIconFile() const
         {
-            RelativePath aaxSDK (getOwner().getAAXPathValue().toString(), RelativePath::projectFolder);
+            RelativePath aaxSDK (owner.getAAXPathValue().toString(), RelativePath::projectFolder);
             RelativePath projectIcon ("icon.ico", RelativePath::buildTargetFolder);
 
             if (getOwner().getTargetFolder().getChildFile ("icon.ico").existsAsFile())
@@ -1073,23 +1083,41 @@ public:
         {
             if (type == AAXPlugIn)
             {
-                RelativePath aaxSDK (getOwner().getAAXPathValue().toString(), RelativePath::projectFolder);
+                RelativePath aaxSDK (owner.getAAXPathValue().toString(), RelativePath::projectFolder);
                 RelativePath aaxLibsFolder = aaxSDK.getChildFile ("Libs");
                 RelativePath bundleScript  = aaxSDK.getChildFile ("Utilities").getChildFile ("CreatePackage.bat");
                 RelativePath iconFilePath  = getAAXIconFile();
 
-                auto outputFilename = config.getOutputFilename (".aaxplugin", true);
+                auto outputFilename = config.getOutputFilename (".aaxplugin", true, false);
                 auto bundleDir      = getOwner().getOutDirFile (config, outputFilename);
                 auto bundleContents = bundleDir + "\\Contents";
                 auto archDir        = bundleContents + String ("\\") + (config.is64Bit() ? "x64" : "Win32");
                 auto executable     = archDir + String ("\\") + outputFilename;
 
-                auto pkgScript = String ("copy /Y ") + getOutputFilePath (config).quoted() + String (" ") + executable.quoted() + String ("\r\ncall ")
+                auto pkgScript = String ("copy /Y ") + getOutputFilePath (config, false).quoted() + String (" ") + executable.quoted() + String ("\r\ncall ")
                                      + createRebasedPath (bundleScript) + String (" ") + archDir.quoted() + String (" ") + createRebasedPath (iconFilePath);
 
                 if (config.isPluginBinaryCopyStepEnabled())
                     return pkgScript + "\r\n" + "xcopy " + bundleDir.quoted() + " "
                                + String (config.getAAXBinaryLocationString() + "\\" + outputFilename + "\\").quoted() + " /E /H /K /R /Y";
+
+                return pkgScript;
+            }
+            else if (type == UnityPlugIn)
+            {
+                RelativePath scriptPath (config.project.getGeneratedCodeFolder().getChildFile (config.project.getUnityScriptName()),
+                                         getOwner().getTargetFolder(),
+                                         RelativePath::projectFolder);
+
+                auto pkgScript = String ("copy /Y ") + scriptPath.toWindowsStyle().quoted() + " \"$(OutDir)\"";
+
+                if (config.isPluginBinaryCopyStepEnabled())
+                {
+                    auto copyLocation = config.getUnityPluginBinaryLocationString();
+
+                    pkgScript += "\r\ncopy /Y \"$(OutDir)$(TargetFileName)\" " +  String (copyLocation + "\\$(TargetFileName)").quoted();
+                    pkgScript += "\r\ncopy /Y " + String ("$(OutDir)" + config.project.getUnityScriptName()).quoted() + " " + String (copyLocation + "\\" + config.project.getUnityScriptName()).quoted();
+                }
 
                 return pkgScript;
             }
@@ -1111,7 +1139,7 @@ public:
             {
                 String script;
 
-                auto bundleDir      = getOwner().getOutDirFile (config, config.getOutputFilename (".aaxplugin", false));
+                auto bundleDir      = getOwner().getOutDirFile (config, config.getOutputFilename (".aaxplugin", false, false));
                 auto bundleContents = bundleDir + "\\Contents";
                 auto archDir        = bundleContents + String ("\\") + (config.is64Bit() ? "x64" : "Win32");
 
@@ -1146,13 +1174,13 @@ public:
             {
             case AAXPlugIn:
                 {
-                    auto aaxLibsFolder = RelativePath (getOwner().getAAXPathValue().toString(), RelativePath::projectFolder).getChildFile ("Libs");
+                    auto aaxLibsFolder = RelativePath (owner.getAAXPathValue().toString(), RelativePath::projectFolder).getChildFile ("Libs");
                     defines.set ("JucePlugin_AAXLibs_path", createRebasedPath (aaxLibsFolder));
                 }
                 break;
             case RTASPlugIn:
                 {
-                    RelativePath rtasFolder (getOwner().getRTASPathValue().toString(), RelativePath::projectFolder);
+                    RelativePath rtasFolder (owner.getRTASPathValue().toString(), RelativePath::projectFolder);
                     defines.set ("JucePlugin_WinBag_path", createRebasedPath (rtasFolder.getChildFile ("WinBag")));
                 }
                 break;
@@ -1174,7 +1202,7 @@ public:
             StringArray searchPaths;
             if (type == RTASPlugIn)
             {
-                RelativePath rtasFolder (getOwner().getRTASPathValue().toString(), RelativePath::projectFolder);
+                RelativePath rtasFolder (owner.getRTASPathValue().toString(), RelativePath::projectFolder);
 
                 static const char* p[] = { "AlturaPorts/TDMPlugins/PluginLibrary/EffectClasses",
                                            "AlturaPorts/TDMPlugins/PluginLibrary/ProcessClasses",
@@ -1210,14 +1238,14 @@ public:
             return searchPaths;
         }
 
-        String getBinaryNameWithSuffix (const MSVCBuildConfiguration& config) const
+        String getBinaryNameWithSuffix (const MSVCBuildConfiguration& config, bool forceUnityPrefix) const
         {
-            return config.getOutputFilename (getTargetSuffix(), true);
+            return config.getOutputFilename (getTargetSuffix(), true, forceUnityPrefix);
         }
 
-        String getOutputFilePath (const MSVCBuildConfiguration& config) const
+        String getOutputFilePath (const MSVCBuildConfiguration& config, bool forceUnityPrefix) const
         {
-            return getOwner().getOutDirFile (config, getBinaryNameWithSuffix (config));
+            return getOwner().getOutDirFile (config, getBinaryNameWithSuffix (config, forceUnityPrefix));
         }
 
         StringArray getLibrarySearchPaths (const BuildConfiguration& config) const
@@ -1244,7 +1272,7 @@ public:
 
             if (type != SharedCodeTarget)
                 if (auto* shared = getOwner().getSharedCodeTarget())
-                    libraries.add (shared->getBinaryNameWithSuffix (config));
+                    libraries.add (shared->getBinaryNameWithSuffix (config, false));
 
             return libraries.joinIntoString (";");
         }
@@ -1325,6 +1353,7 @@ public:
         case ProjectType::Target::VST3PlugIn:
         case ProjectType::Target::AAXPlugIn:
         case ProjectType::Target::RTASPlugIn:
+        case ProjectType::Target::UnityPlugIn:
         case ProjectType::Target::DynamicLibrary:
             return true;
         default:
@@ -1344,8 +1373,6 @@ public:
     }
 
     //==============================================================================
-    const String& getProjectName() const         { return projectName; }
-
     bool launchProject() override
     {
        #if JUCE_WINDOWS
@@ -1493,7 +1520,7 @@ protected:
 
     BuildConfiguration::Ptr createBuildConfig (const ValueTree& v) const override
     {
-        return new MSVCBuildConfiguration (project, v, *this);
+        return *new MSVCBuildConfiguration (project, v, *this);
     }
 
     StringArray getHeaderSearchPaths (const BuildConfiguration& config) const
@@ -1806,7 +1833,7 @@ protected:
 
     static bool shouldUseStdCall (const RelativePath& path)
     {
-        return path.getFileNameWithoutExtension().startsWithIgnoreCase ("juce_audio_plugin_client_RTAS_");
+        return path.getFileNameWithoutExtension().startsWithIgnoreCase ("include_juce_audio_plugin_client_RTAS_");
     }
 
     StringArray getModuleLibs() const
@@ -1932,7 +1959,7 @@ public:
     String getSolutionComment() const override                       { return "# Visual Studio 2017"; }
     String getToolsVersion() const override                          { return "15.0"; }
     String getDefaultToolset() const override                        { return "v141"; }
-    String getDefaultWindowsTargetPlatformVersion() const override   { return "10.0.16299.0"; }
+    String getDefaultWindowsTargetPlatformVersion() const override   { return "Latest"; }
 
     static MSVCProjectExporterVC2017* createForSettings (Project& project, const ValueTree& settings)
     {

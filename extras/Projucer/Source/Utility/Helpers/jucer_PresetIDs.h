@@ -118,6 +118,7 @@ namespace Ids
     DECLARE_ID (auBinaryLocation);
     DECLARE_ID (rtasBinaryLocation);
     DECLARE_ID (aaxBinaryLocation);
+    DECLARE_ID (unityPluginBinaryLocation);
     DECLARE_ID (enablePluginBinaryCopyStep);
     DECLARE_ID (stripLocalSymbols);
     DECLARE_ID (osxSDK);
@@ -125,6 +126,9 @@ namespace Ids
     DECLARE_ID (osxArchitecture);
     DECLARE_ID (iosCompatibility);
     DECLARE_ID (extraFrameworks);
+    DECLARE_ID (frameworkSearchPaths);
+    DECLARE_ID (extraCustomFrameworks);
+    DECLARE_ID (embeddedFrameworks);
     DECLARE_ID (extraDLLs);
     DECLARE_ID (winArchitecture);
     DECLARE_ID (winWarningLevel);
@@ -146,6 +150,7 @@ namespace Ids
     DECLARE_ID (postbuildCommand);
     DECLARE_ID (generateManifest);
     DECLARE_ID (useRuntimeLibDLL);
+    DECLARE_ID (multiProcessorCompilation);
     DECLARE_ID (enableIncrementalLinking);
     DECLARE_ID (bundleIdentifier);
     DECLARE_ID (aaxIdentifier);
@@ -217,6 +222,7 @@ namespace Ids
     DECLARE_ID (androidSharedLibraries);
     DECLARE_ID (androidScreenOrientation);
     DECLARE_ID (androidExtraAssetsFolder);
+    DECLARE_ID (androidStudioExePath);
     DECLARE_ID (iosDeviceFamily);
     const Identifier iPhoneScreenOrientation ("iosScreenOrientation"); // old name is confusing
     DECLARE_ID (iPadScreenOrientation);
@@ -298,6 +304,7 @@ namespace Ids
     DECLARE_ID (buildRTAS);
     DECLARE_ID (buildAAX);
     DECLARE_ID (buildStandalone);
+    DECLARE_ID (buildUnity);
     DECLARE_ID (enableIAA);
     DECLARE_ID (pluginName);
     DECLARE_ID (pluginDesc);
@@ -315,6 +322,7 @@ namespace Ids
     DECLARE_ID (pluginVST3Category);
     DECLARE_ID (pluginAUExportPrefix);
     DECLARE_ID (pluginAUMainType);
+    DECLARE_ID (pluginAUIsSandboxSafe);
     DECLARE_ID (pluginRTASCategory);
     DECLARE_ID (pluginRTASDisableBypass);
     DECLARE_ID (pluginRTASDisableMultiMono);

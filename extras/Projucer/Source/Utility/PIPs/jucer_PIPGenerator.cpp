@@ -27,6 +27,7 @@
 #include "../../Application/jucer_Headers.h"
 #include "../../ProjectSaving/jucer_ProjectExporter.h"
 #include "jucer_PIPGenerator.h"
+#include "../../Project/jucer_Module.h"
 
 //==============================================================================
 static String removeEnclosed (const String& input, const String& start, const String& end)
@@ -97,8 +98,10 @@ static bool isMobileExporter (const String& exporterName)
 }
 
 //==============================================================================
-PIPGenerator::PIPGenerator (const File& pip, const File& output)
+PIPGenerator::PIPGenerator (const File& pip, const File& output, const File& jucePath, const Array<File>& userPaths)
     : pipFile (pip),
+      juceModulesPath (jucePath),
+      userModulesPaths (userPaths),
       metadata (parsePIPMetadata())
 {
     if (output != File())
@@ -117,6 +120,12 @@ PIPGenerator::PIPGenerator (const File& pip, const File& output)
 
     outputDirectory = outputDirectory.getChildFile (metadata[Ids::name].toString());
     useLocalCopy = metadata[Ids::useLocalCopy].toString().isNotEmpty() || isClipboard;
+
+    if (! userModulesPaths.isEmpty())
+    {
+        availableUserModules.reset (new AvailableModuleList());
+        availableUserModules->scanPaths (userModulesPaths);
+    }
 }
 
 //==============================================================================
@@ -142,20 +151,20 @@ Result PIPGenerator::createJucerFile()
 
     if (xml->writeToFile (outputFile, {}))
         return Result::ok();
-    else
-        return Result::fail ("Failed to create .jucer file in " + outputDirectory.getFullPathName()+ ".");
+
+    return Result::fail ("Failed to create .jucer file in " + outputDirectory.getFullPathName());
 }
 
-bool PIPGenerator::createMainCpp()
+Result PIPGenerator::createMainCpp()
 {
     auto outputFile = outputDirectory.getChildFile ("Source").getChildFile ("Main.cpp");
 
     if (! outputFile.existsAsFile() && (outputFile.create() != Result::ok()))
-        return false;
+        return Result::fail ("Failed to create Main.cpp - " + outputFile.getFullPathName());
 
     outputFile.replaceWithText (getMainFileTextForType());
 
-    return true;
+    return Result::ok();
 }
 
 //==============================================================================
@@ -290,7 +299,7 @@ ValueTree PIPGenerator::createModulePathChild (const String& moduleID)
     ValueTree modulePath (Ids::MODULEPATH);
 
     modulePath.setProperty (Ids::ID, moduleID, nullptr);
-    modulePath.setProperty (Ids::path, {}, nullptr);
+    modulePath.setProperty (Ids::path, getPathForModule (moduleID).getFullPathName(), nullptr);
 
     return modulePath;
 }
@@ -347,12 +356,7 @@ ValueTree PIPGenerator::createExporterChild (const String& exporterName)
         auto modules = StringArray::fromTokens (metadata[Ids::dependencies_].toString(), ",", {});
 
         for (auto m : modules)
-        {
-            m = m.trim();
-
-            if (isJUCEModule (m))
-                modulePaths.addChild (createModulePathChild (m), -1, nullptr);
-        }
+            modulePaths.addChild (createModulePathChild (m.trim()), -1, nullptr);
 
         exporter.addChild (modulePaths, -1, nullptr);
     }
@@ -367,7 +371,7 @@ ValueTree PIPGenerator::createModuleChild (const String& moduleID)
     module.setProperty (Ids::ID, moduleID, nullptr);
     module.setProperty (Ids::showAllCode, 1, nullptr);
     module.setProperty (Ids::useLocalCopy, 0, nullptr);
-    module.setProperty (Ids::useGlobalPath, 1, nullptr);
+    module.setProperty (Ids::useGlobalPath, (getPathForModule (moduleID) == File() ? 1 : 0), nullptr);
 
     return module;
 }
@@ -406,12 +410,7 @@ void PIPGenerator::addModules (ValueTree& jucerTree)
         modules.mergeArray (getModulesRequiredForAudioProcessor());
 
     for (auto& m : modules)
-    {
-        m = m.trim();
-
-        if (isJUCEModule (m))
-            modulesTree.addChild (createModuleChild (m), -1, nullptr);
-    }
+        modulesTree.addChild (createModuleChild (m.trim()), -1, nullptr);
 
     jucerTree.addChild (modulesTree, -1, nullptr);
 }
@@ -460,8 +459,9 @@ Result PIPGenerator::setProjectSettings (ValueTree& jucerTree)
     {
         jucerTree.setProperty (Ids::projectType, "audioplug", nullptr);
         jucerTree.setProperty (Ids::pluginManufacturer, metadata[Ids::vendor], nullptr);
+        jucerTree.setProperty (Ids::pluginAUIsSandboxSafe, "1", nullptr);
 
-        StringArray pluginFormatsToBuild (Ids::buildVST.toString(), Ids::buildAU.toString(), Ids::buildStandalone.toString());
+        StringArray pluginFormatsToBuild (Ids::buildVST3.toString(), Ids::buildAU.toString(), Ids::buildStandalone.toString());
         pluginFormatsToBuild.addArray (getExtraPluginFormatsToBuild());
 
         jucerTree.setProperty (Ids::pluginFormats, pluginFormatsToBuild.joinIntoString (","), nullptr);
@@ -592,6 +592,21 @@ StringArray PIPGenerator::getPluginCharacteristics() const
                  Ids::pluginIsSynth.toString() };
     else if (name == "ArpeggiatorPlugin")
         return { Ids::pluginIsMidiEffectPlugin.toString() };
+
+    return {};
+}
+
+File PIPGenerator::getPathForModule (const String& moduleID) const
+{
+    if (isJUCEModule (moduleID))
+    {
+        if (juceModulesPath != File())
+            return juceModulesPath;
+    }
+    else if (availableUserModules != nullptr)
+    {
+        return availableUserModules->getModuleWithID (moduleID).second.getParentDirectory();
+    }
 
     return {};
 }

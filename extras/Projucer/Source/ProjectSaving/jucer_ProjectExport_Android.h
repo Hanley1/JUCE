@@ -93,13 +93,6 @@ public:
     }
 
     //==============================================================================
-    void initialiseDependencyPathValues() override
-    {
-        sdkPath.referTo  (Value (new DependencyPathValueSource (getSetting (Ids::androidSDKPath), Ids::androidSDKPath, TargetOS::getThisOS())));
-        ndkPath.referTo  (Value (new DependencyPathValueSource (getSetting (Ids::androidNDKPath), Ids::androidNDKPath, TargetOS::getThisOS())));
-    }
-
-    //==============================================================================
     ValueWithDefault androidJavaLibs, androidRepositories, androidDependencies, androidScreenOrientation, androidActivityClass,
                      androidActivitySubClassName, androidActivityBaseClassName, androidManifestCustomXmlElements, androidVersionCode,
                      androidMinimumSDK, androidTheme, androidSharedLibraries, androidStaticLibraries, androidExtraAssetsFolder,
@@ -144,9 +137,9 @@ public:
           androidKeyAliasPass                  (settings, Ids::androidKeyAliasPass,                  getUndoManager(), "android"),
           gradleVersion                        (settings, Ids::gradleVersion,                        getUndoManager(), "4.4"),
           gradleToolchain                      (settings, Ids::gradleToolchain,                      getUndoManager(), "clang"),
-          androidPluginVersion                 (settings, Ids::androidPluginVersion,                 getUndoManager(), "3.1.1"),
-          buildToolsVersion                    (settings, Ids::buildToolsVersion,                    getUndoManager(), "27.0.3"),
-          AndroidExecutable (findAndroidExecutable())
+          androidPluginVersion                 (settings, Ids::androidPluginVersion,                 getUndoManager(), "3.1.3"),
+          buildToolsVersion                    (settings, Ids::buildToolsVersion,                    getUndoManager(), "28.0.0"),
+          AndroidExecutable                    (getAppSettings().getStoredPath (Ids::androidStudioExePath).toString())
     {
         name = getName();
 
@@ -276,38 +269,6 @@ public:
         overwriteFileIfDifferentOrThrow (gradleProjectFolder.getChildFile (filePath), outStream);
     }
 
-    //==============================================================================
-    static File findAndroidExecutable()
-    {
-       #if JUCE_WINDOWS
-        File defaultInstallation ("C:\\Program Files\\Android\\Android Studio\\bin");
-
-        if (defaultInstallation.exists())
-        {
-            {
-                auto studio64 = defaultInstallation.getChildFile ("studio64.exe");
-
-                if (studio64.existsAsFile())
-                    return studio64;
-            }
-
-            {
-                auto studio = defaultInstallation.getChildFile ("studio.exe");
-
-                if (studio.existsAsFile())
-                    return studio;
-            }
-        }
-      #elif JUCE_MAC
-       File defaultInstallation ("/Applications/Android Studio.app");
-
-       if (defaultInstallation.exists())
-           return defaultInstallation;
-      #endif
-
-        return {};
-    }
-
 protected:
     //==============================================================================
     class AndroidBuildConfiguration  : public BuildConfiguration
@@ -315,7 +276,7 @@ protected:
     public:
         AndroidBuildConfiguration (Project& p, const ValueTree& settings, const ProjectExporter& e)
             : BuildConfiguration (p, settings, e),
-              androidArchitectures               (config, Ids::androidArchitectures,               getUndoManager(), isDebug() ? "armeabi x86" : ""),
+              androidArchitectures               (config, Ids::androidArchitectures,               getUndoManager(), isDebug() ? "armeabi-v7a x86" : ""),
               androidBuildConfigRemoteNotifsConfigFile (config, Ids::androidBuildConfigRemoteNotifsConfigFile, getUndoManager()),
               androidAdditionalXmlValueResources (config, Ids::androidAdditionalXmlValueResources, getUndoManager()),
               androidAdditionalDrawableResources (config, Ids::androidAdditionalDrawableResources, getUndoManager()),
@@ -387,7 +348,7 @@ protected:
 
     BuildConfiguration::Ptr createBuildConfig (const ValueTree& v) const override
     {
-        return new AndroidBuildConfiguration (project, v, *this);
+        return *new AndroidBuildConfiguration (project, v, *this);
     }
 
 private:
@@ -467,7 +428,20 @@ private:
                 mo << (first ? "IF" : "ELSEIF") << "(JUCE_BUILD_CONFIGURATION MATCHES \"" << cfg.getProductFlavourCMakeIdentifier() <<"\")" << newLine;
 
                 if (isLibrary())
+                {
                     mo << "    SET(BINARY_NAME \"" << getNativeModuleBinaryName (cfg) << "\")" << newLine;
+
+                    auto binaryLocation = cfg.getTargetBinaryRelativePathString();
+
+                    if (binaryLocation.isNotEmpty())
+                    {
+                        auto locationRelativeToCmake = RelativePath (binaryLocation, RelativePath::projectFolder)
+                                                        .rebased (getProject().getFile().getParentDirectory(),
+                                                                  file.getParentDirectory(), RelativePath::buildTargetFolder);
+
+                        mo << "    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY \"" << "../../../../" << locationRelativeToCmake.toUnixStyle() << "\")" << newLine;
+                    }
+                }
 
                 writeCmakePathLines (mo, "    ", "link_directories(", libSearchPaths);
 
@@ -842,8 +816,8 @@ private:
     {
         String props;
 
-        props << "ndk.dir=" << sanitisePath (ndkPath.toString()) << newLine
-              << "sdk.dir=" << sanitisePath (sdkPath.toString()) << newLine;
+        props << "ndk.dir=" << sanitisePath (getAppSettings().getStoredPath (Ids::androidNDKPath).toString()) << newLine
+              << "sdk.dir=" << sanitisePath (getAppSettings().getStoredPath (Ids::androidSDKPath).toString()) << newLine;
 
         return props;
     }
@@ -894,12 +868,6 @@ private:
 
         props.add (new TextPropertyComponent (androidVersionCode, "Android Version Code", 32, false),
                    "An integer value that represents the version of the application code, relative to other versions.");
-
-        props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), sdkPath, "Android SDK Path"),
-                   "The path to the Android SDK folder on the target build machine");
-
-        props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), ndkPath, "Android NDK Path"),
-                   "The path to the Android NDK folder on the target build machine");
 
         props.add (new TextPropertyComponent (androidMinimumSDK, "Minimum SDK version", 32, false),
                    "The number of the minimum version of the Android SDK that the app requires");
@@ -1050,6 +1018,7 @@ private:
         auto midiCode = getMidiCode (javaSourceFolder, className);
         auto webViewCode = getWebViewCode (javaSourceFolder);
         auto cameraCode = getCameraCode (javaSourceFolder);
+        auto videoCode = getVideoCode (javaSourceFolder);
 
         auto javaSourceFile = javaSourceFolder.getChildFile ("JuceAppActivity.java");
         auto javaSourceLines = StringArray::fromLines (javaSourceFile.loadFileAsString());
@@ -1075,6 +1044,10 @@ private:
                     newFile << cameraCode.imports;
                 else if (line.contains ("$$JuceAndroidCameraCode$$"))
                     newFile << cameraCode.main;
+                else if (line.contains ("$$JuceAndroidVideoImports$$"))
+                    newFile << videoCode.imports;
+                else if (line.contains ("$$JuceAndroidVideoCode$$"))
+                    newFile << videoCode.main;
                 else
                     newFile << line.replace ("$$JuceAppActivityBaseClass$$", androidActivityBaseClassName.get().toString())
                                    .replace ("JuceAppActivity", className)
@@ -1203,18 +1176,43 @@ private:
         String juceCameraImports, juceCameraCode;
 
         if (static_cast<int> (androidMinimumSDK.get()) >= 21)
+        {
             juceCameraImports << "import android.hardware.camera2.*;" << newLine;
 
-        auto javaCameraFile = javaSourceFolder.getChildFile ("AndroidCamera.java");
-        auto juceCameraCodeAll = javaCameraFile.loadFileAsString();
+            auto javaCameraFile = javaSourceFolder.getChildFile ("AndroidCamera.java");
+            auto juceCameraCodeAll = javaCameraFile.loadFileAsString();
 
-        if (static_cast<int> (androidMinimumSDK.get()) >= 21)
-        {
             juceCameraCode << juceCameraCodeAll.fromFirstOccurrenceOf ("$$CameraApi21", false, false)
                                                .upToFirstOccurrenceOf ("CameraApi21$$", false, false);
         }
 
         return { juceCameraImports, juceCameraCode };
+    }
+
+    struct VideoCode
+    {
+        String imports;
+        String main;
+    };
+
+    VideoCode getVideoCode (const File& javaSourceFolder) const
+    {
+        String juceVideoImports, juceVideoCode;
+
+        if (static_cast<int> (androidMinimumSDK.get()) >= 21)
+        {
+            juceVideoImports << "import android.database.ContentObserver;" << newLine;
+            juceVideoImports << "import android.media.session.*;" << newLine;
+            juceVideoImports << "import android.media.MediaMetadata;" << newLine;
+
+            auto javaVideoFile = javaSourceFolder.getChildFile ("AndroidVideo.java");
+            auto juceVideoCodeAll = javaVideoFile.loadFileAsString();
+
+            juceVideoCode << juceVideoCodeAll.fromFirstOccurrenceOf ("$$VideoApi21", false, false)
+                                             .upToFirstOccurrenceOf ("VideoApi21$$", false, false);
+        }
+
+        return { juceVideoImports, juceVideoCode };
     }
 
     void copyAdditionalJavaFiles (const File& sourceFolder, const File& targetFolder) const
@@ -1707,7 +1705,6 @@ private:
         auto* manifest = createManifestElement();
 
         createSupportsScreensElement (*manifest);
-        createUsesSdkElement         (*manifest);
         createPermissionElements     (*manifest);
         createOpenGlFeatureElement   (*manifest);
 
@@ -1755,13 +1752,6 @@ private:
         }
     }
 
-    void createUsesSdkElement (XmlElement& manifest) const
-    {
-        auto* sdk = getOrCreateChildWithName (manifest, "uses-sdk");
-        setAttributeIfNotPresent (*sdk, "android:minSdkVersion", androidMinimumSDK.get());
-        setAttributeIfNotPresent (*sdk, "android:targetSdkVersion", androidMinimumSDK.get());
-    }
-
     void createPermissionElements (XmlElement& manifest) const
     {
         auto permissions = getPermissionsRequired();
@@ -1777,7 +1767,7 @@ private:
 
     void createOpenGlFeatureElement (XmlElement& manifest) const
     {
-        if (project.getModules().isModuleEnabled ("juce_opengl"))
+        if (project.getEnabledModules().isModuleEnabled ("juce_opengl"))
         {
             XmlElement* glVersion = nullptr;
 
@@ -2004,7 +1994,6 @@ private:
     }
 
     //==============================================================================
-    Value sdkPath, ndkPath;
     const File AndroidExecutable;
 
     JUCE_DECLARE_NON_COPYABLE (AndroidProjectExporter)

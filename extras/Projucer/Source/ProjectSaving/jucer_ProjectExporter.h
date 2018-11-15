@@ -244,8 +244,12 @@ public:
         String getName() const                                 { return configNameValue.get(); }
         bool isDebug() const                                   { return isDebugValue.get(); }
 
-        String getTargetBinaryNameString() const               { return targetNameValue.get(); }
         String getTargetBinaryRelativePathString() const       { return targetBinaryPathValue.get(); }
+        String getTargetBinaryNameString (bool isUnityPlugin = false) const
+        {
+            return (isUnityPlugin ? Project::addUnityPluginPrefixIfNecessary (targetNameValue.get().toString())
+                                  : targetNameValue.get().toString());
+        }
 
         int getOptimisationLevelInt() const                    { return optimisationLevelValue.get(); }
         String getGCCOptimisationFlag() const;
@@ -299,7 +303,7 @@ public:
         bool next();
 
         BuildConfiguration& operator*() const       { return *config; }
-        BuildConfiguration* operator->() const      { return config; }
+        BuildConfiguration* operator->() const      { return config.get(); }
 
         BuildConfiguration::Ptr config;
         int index;
@@ -316,7 +320,7 @@ public:
         bool next();
 
         const BuildConfiguration& operator*() const       { return *config; }
-        const BuildConfiguration* operator->() const      { return config; }
+        const BuildConfiguration* operator->() const      { return config.get(); }
 
         BuildConfiguration::Ptr config;
         int index;
@@ -365,6 +369,7 @@ protected:
     const ProjectType& projectType;
     const String projectName;
     const File projectFolder;
+
     Value vst3Path, rtasPath, aaxPath; // these must be initialised in the specific exporter c'tors!
 
     ValueWithDefault targetLocationValue, extraCompilerFlagsValue, extraLinkerFlagsValue, externalLibrariesValue,
@@ -441,6 +446,7 @@ private:
     void createIconProperties (PropertyListBuilder&);
     void addVSTPathsIfPluginOrHost();
     void addCommonAudioPluginSettings();
+    RelativePath getInternalVST3SDKPath();
     void addVST3FolderToPath();
     void addAAXFoldersToPath();
 
