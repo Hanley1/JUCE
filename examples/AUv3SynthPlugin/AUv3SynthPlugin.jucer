@@ -4,15 +4,15 @@
               companyWebsite="http://juce.com" defines="PIP_JUCE_EXAMPLES_DIRECTORY=L1VzZXJzL0pvZS9EZXZlbG9wZXIvSlVDRS9leGFtcGxlcw=="
               projectType="audioplug" pluginManufacturer="JUCE" pluginAUIsSandboxSafe="1"
               pluginFormats="buildVST3,buildAU,buildStandalone,buildAUv3" pluginCharacteristicsValue="pluginWantsMidiIn,pluginIsSynth"
-              id="E7SN7g" jucerVersion="5.3.2">
-  <MAINGROUP id="EKb8yj" name="AUv3SynthPlugin">
+              id="HDkWkz" jucerVersion="5.3.2">
+  <MAINGROUP id="xTWYQz" name="AUv3SynthPlugin">
     <GROUP id="{27CB62D9-276D-FE3C-6087-C6F0A1A8AB0D}" name="Source">
-      <FILE id="oVL6oH" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-      <FILE id="uBcuyK" name="AUv3SynthPluginDemo.h" compile="0" resource="0"
+      <FILE id="UdjNAP" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="I4rAgk" name="AUv3SynthPluginDemo.h" compile="0" resource="0"
             file="Source/AUv3SynthPluginDemo.h"/>
     </GROUP>
-    <GROUP id="YMODOd" name="Assets">
-      <FILE id="Vu5Byz" name="DemoUtilities.h" compile="0" resource="0" file="Source/DemoUtilities.h"/>
+    <GROUP id="VIFvkk" name="Assets">
+      <FILE id="HkfSCg" name="DemoUtilities.h" compile="0" resource="0" file="Source/DemoUtilities.h"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
@@ -72,8 +72,8 @@
       </MODULEPATHS>
     </XCODE_IPHONE>
   </EXPORTFORMATS>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <LIVE_SETTINGS>
     <OSX buildEnabled="1"/>
   </LIVE_SETTINGS>
-  <JUCEOPTIONS/>
 </JUCERPROJECT>

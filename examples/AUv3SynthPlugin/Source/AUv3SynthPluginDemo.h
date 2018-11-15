@@ -35,6 +35,8 @@
                    juce_events, juce_graphics, juce_gui_basics, juce_gui_extra
  exporters:        xcode_mac, xcode_iphone
 
+ moduleFlags:      JUCE_STRICT_REFCOUNTEDPOINTER=1
+
  type:             AudioProcessor
  mainClass:        AUv3SynthProcessor
 
@@ -192,10 +194,6 @@ public:
         roomSizeSlider.onValueChange = [this] { setParameterValue ("roomSize", roomSizeSlider.getValue()); };
         roomSizeSlider.setRange (0.0, 1.0);
         addAndMakeVisible (roomSizeSlider);
-        
-        addAndMakeVisible(testLabel);
-        testLabel.setText("TEST", NotificationType::sendNotification);
-        testLabel.setEditable(true);
 
         if (auto* assetStream = createAssetInputStream ("proaudio.path"))
         {
@@ -238,8 +236,6 @@ public:
 
         recordButton  .setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
         roomSizeSlider.setBounds (r.removeFromTop (guiElementAreaHeight).withSizeKeepingCentre (r.getWidth(), buttonHeight));
-        
-        testLabel.setBounds(20,20,100,20);
     }
 
     //==============================================================================
@@ -301,7 +297,6 @@ private:
     TextButton recordButton { "Record" };
     Slider roomSizeSlider;
     DrawablePath proAudioIcon;
-    Label testLabel;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AUv3SynthEditor)
