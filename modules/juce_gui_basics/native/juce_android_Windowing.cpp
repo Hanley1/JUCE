@@ -74,7 +74,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, launchApp, void, (JNIEnv* en
         jassertfalse; // you must supply an application object for an android app!
     }
 
-    jassert (MessageManager::getInstance()->isThisTheMessageThread());
+    JUCE_ASSERT_MESSAGE_THREAD
 }
 
 JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, suspendApp, void, (JNIEnv* env, jobject))
@@ -200,7 +200,7 @@ JUCE_JNI_CALLBACK (JUCE_FIREBASE_MESSAGING_SERVICE_CLASSNAME, firebaseRemoteMess
  METHOD (drawBitmap,       "drawBitmap",    "([IIIFFIIZLandroid/graphics/Paint;)V") \
  METHOD (getClipBounds,    "getClipBounds", "()Landroid/graphics/Rect;")
 
-DECLARE_JNI_CLASS (CanvasMinimal, "android/graphics/Canvas");
+DECLARE_JNI_CLASS (CanvasMinimal, "android/graphics/Canvas")
 #undef JNI_CLASS_MEMBERS
 
 //==============================================================================
@@ -212,7 +212,7 @@ DECLARE_JNI_CLASS (CanvasMinimal, "android/graphics/Canvas");
  METHOD (showKeyboard,                "showKeyboard",                "(Ljava/lang/String;)V") \
  METHOD (setSystemUiVisibilityCompat, "setSystemUiVisibilityCompat", "(I)V") \
 
-DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView");
+DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView")
 #undef JNI_CLASS_MEMBERS
 
 
@@ -1073,7 +1073,6 @@ void MouseCursor::deleteMouseCursor (void* const /*cursorHandle*/, const bool /*
 
 //==============================================================================
 void MouseCursor::showInWindow (ComponentPeer*) const   {}
-void MouseCursor::showInAllWindows() const  {}
 
 //==============================================================================
 bool DragAndDropContainer::performExternalDragDropOfFiles (const StringArray& /*files*/, const bool /*canMove*/,

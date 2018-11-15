@@ -119,19 +119,20 @@ public:
                 writeReadmeFile();
                 deleteUnwantedFilesIn (generatedCodeFolder);
             }
-        }
-        else
-        {
-            project.setFile (oldFile);
-            return Result::fail (errors[0]);
+
+            if (errors.size() == 0)
+            {
+                // Workaround for a bug where Xcode thinks the project is invalid if opened immedietely
+                // after writing
+                if (waitAfterSaving)
+                    Thread::sleep (2000);
+
+                return Result::ok();
+            }
         }
 
-        // Workaround for a bug where Xcode thinks the project is invalid if opened immedietely
-        // after writing
-        if (waitAfterSaving)
-            Thread::sleep (2000);
-
-        return Result::ok();
+        project.setFile (oldFile);
+        return Result::fail (errors[0]);
     }
 
     Result saveResourcesOnly()
@@ -490,25 +491,24 @@ private:
             }
         }
 
+        if (extraAppConfigContent.isNotEmpty())
+            out << newLine << extraAppConfigContent.trimEnd() << newLine;
+
         {
-            int isStandaloneApplication = 1;
             auto& type = project.getProjectType();
 
-            if (type.isAudioPlugin() || type.isDynamicLibrary())
-                isStandaloneApplication = 0;
+            auto isStandaloneApplication = (! type.isAudioPlugin() && ! type.isDynamicLibrary());
 
-            out << "//==============================================================================" << newLine
+            out << newLine
+                << "//==============================================================================" << newLine
                 << "#ifndef    JUCE_STANDALONE_APPLICATION" << newLine
                 << " #if defined(JucePlugin_Name) && defined(JucePlugin_Build_Standalone)" << newLine
                 << "  #define  JUCE_STANDALONE_APPLICATION JucePlugin_Build_Standalone" << newLine
                 << " #else" << newLine
-                << "  #define  JUCE_STANDALONE_APPLICATION " << isStandaloneApplication << newLine
+                << "  #define  JUCE_STANDALONE_APPLICATION " << (isStandaloneApplication ? "1" : "0") << newLine
                 << " #endif" << newLine
                 << "#endif" << newLine;
         }
-
-        if (extraAppConfigContent.isNotEmpty())
-            out << newLine << extraAppConfigContent.trimEnd() << newLine;
     }
 
     void writeAppConfigFile (const OwnedArray<LibraryModule>& modules, const String& userContent)
@@ -680,7 +680,8 @@ private:
 
         auto projectName = Project::addUnityPluginPrefixIfNecessary (project.getProjectNameString());
 
-        unityScriptContents = unityScriptContents.replace ("%%plugin_name%%",        projectName)
+        unityScriptContents = unityScriptContents.replace ("%%plugin_class_name%%",  projectName.replace (" ", "_"))
+                                                 .replace ("%%plugin_name%%",        projectName)
                                                  .replace ("%%plugin_vendor%%",      project.getPluginManufacturerString())
                                                  .replace ("%%plugin_description%%", project.getPluginDescriptionString());
 

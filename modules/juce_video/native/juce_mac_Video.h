@@ -202,10 +202,489 @@ struct VideoComponent::Pimpl   : public BaseClass
     URL currentURL;
 
 private:
+//<<<<<<< HEAD
    #if JUCE_IOS
     AVPlayerViewController* controller = nil;
    #elif JUCE_32BIT
     AVPlayerLayer* controller = nil;
+//=======
+//    //==============================================================================
+//    template <typename Derived>
+//    class PlayerControllerBase
+//    {
+//    public:
+//        ~PlayerControllerBase()
+//        {
+//            detachPlayerStatusObserver();
+//            detachPlaybackObserver();
+//        }
+//
+//    protected:
+//        //==============================================================================
+//        struct JucePlayerStatusObserverClass : public ObjCClass<NSObject>
+//        {
+//            JucePlayerStatusObserverClass()    : ObjCClass<NSObject> ("JucePlayerStatusObserverClass_")
+//            {
+//               #pragma clang diagnostic push
+//               #pragma clang diagnostic ignored "-Wundeclared-selector"
+//                addMethod (@selector (observeValueForKeyPath:ofObject:change:context:), valueChanged, "v@:@@@?");
+//               #pragma clang diagnostic pop
+//
+//                addIvar<PlayerAsyncInitialiser*> ("owner");
+//
+//                registerClass();
+//            }
+//
+//            //==============================================================================
+//            static PlayerControllerBase& getOwner (id self) { return *getIvar<PlayerControllerBase*> (self, "owner"); }
+//            static void setOwner (id self, PlayerControllerBase* p) { object_setInstanceVariable (self, "owner", p); }
+//
+//        private:
+//            static void valueChanged (id self, SEL, NSString* keyPath, id,
+//                                      NSDictionary<NSKeyValueChangeKey, id>* change, void*)
+//            {
+//                auto& owner = getOwner (self);
+//
+//                if ([keyPath isEqualToString: nsStringLiteral ("rate")])
+//                {
+//                    auto oldRate = [change[NSKeyValueChangeOldKey] floatValue];
+//                    auto newRate = [change[NSKeyValueChangeNewKey] floatValue];
+//
+//                    if (oldRate == 0 && newRate != 0)
+//                        owner.playbackStarted();
+//                    else if (oldRate != 0 && newRate == 0)
+//                        owner.playbackStopped();
+//                }
+//                else if ([keyPath isEqualToString: nsStringLiteral ("status")])
+//                {
+//                    auto status = [change[NSKeyValueChangeNewKey] intValue];
+//
+//                    if (status == AVPlayerStatusFailed)
+//                        owner.errorOccurred();
+//                }
+//            }
+//        };
+//
+//        //==============================================================================
+//        struct JucePlayerItemPlaybackStatusObserverClass : public ObjCClass<NSObject>
+//        {
+//            JucePlayerItemPlaybackStatusObserverClass()    : ObjCClass<NSObject> ("JucePlayerItemPlaybackStatusObserverClass_")
+//            {
+//               #pragma clang diagnostic push
+//               #pragma clang diagnostic ignored "-Wundeclared-selector"
+//                addMethod (@selector (processNotification:), notificationReceived, "v@:@");
+//               #pragma clang diagnostic pop
+//
+//                addIvar<PlayerControllerBase*> ("owner");
+//
+//                registerClass();
+//            }
+//
+//            //==============================================================================
+//            static PlayerControllerBase& getOwner (id self) { return *getIvar<PlayerControllerBase*> (self, "owner"); }
+//            static void setOwner (id self, PlayerControllerBase* p) { object_setInstanceVariable (self, "owner", p); }
+//
+//        private:
+//            static void notificationReceived (id self, SEL, NSNotification* notification)
+//            {
+//                if ([notification.name isEqualToString: AVPlayerItemDidPlayToEndTimeNotification])
+//                    getOwner (self).playbackReachedEndTime();
+//            }
+//        };
+//
+//        //==============================================================================
+//        class PlayerAsyncInitialiser
+//        {
+//        public:
+//            PlayerAsyncInitialiser (PlayerControllerBase& ownerToUse)
+//                : owner (ownerToUse),
+//                  assetKeys ([[NSArray alloc] initWithObjects: nsStringLiteral ("duration"), nsStringLiteral ("tracks"),
+//                                                               nsStringLiteral ("playable"), nil])
+//            {
+//                static JucePlayerItemPreparationStatusObserverClass cls;
+//                playerItemPreparationStatusObserver.reset ([cls.createInstance() init]);
+//                JucePlayerItemPreparationStatusObserverClass::setOwner (playerItemPreparationStatusObserver.get(), this);
+//            }
+//
+//            ~PlayerAsyncInitialiser()
+//            {
+//                detachPreparationStatusObserver();
+//            }
+//
+//            void loadAsync (URL url)
+//            {
+//                auto nsUrl = [NSURL URLWithString: juceStringToNS (url.toString (true))];
+//                asset.reset ([[AVURLAsset alloc] initWithURL: nsUrl options: nil]);
+//
+//                [asset.get() loadValuesAsynchronouslyForKeys: assetKeys.get()
+//                                           completionHandler: ^() { checkAllKeysReadyFor (asset.get(), url); }];
+//            }
+//
+//        private:
+//            //==============================================================================
+//            struct JucePlayerItemPreparationStatusObserverClass : public ObjCClass<NSObject>
+//            {
+//                JucePlayerItemPreparationStatusObserverClass()    : ObjCClass<NSObject> ("JucePlayerItemStatusObserverClass_")
+//                {
+//                   #pragma clang diagnostic push
+//                   #pragma clang diagnostic ignored "-Wundeclared-selector"
+//                    addMethod (@selector (observeValueForKeyPath:ofObject:change:context:), valueChanged, "v@:@@@?");
+//                   #pragma clang diagnostic pop
+//
+//                    addIvar<PlayerAsyncInitialiser*> ("owner");
+//
+//                    registerClass();
+//                }
+//
+//                //==============================================================================
+//                static PlayerAsyncInitialiser& getOwner (id self) { return *getIvar<PlayerAsyncInitialiser*> (self, "owner"); }
+//                static void setOwner (id self, PlayerAsyncInitialiser* p) { object_setInstanceVariable (self, "owner", p); }
+//
+//            private:
+//                static void valueChanged (id self, SEL, NSString*, id object,
+//                                          NSDictionary<NSKeyValueChangeKey, id>* change, void* context)
+//                {
+//                    auto& owner = getOwner (self);
+//
+//                    if (context == &owner)
+//                    {
+//                        auto* playerItem = (AVPlayerItem*) object;
+//                        auto* urlAsset = (AVURLAsset*) playerItem.asset;
+//
+//                        URL url (nsStringToJuce (urlAsset.URL.absoluteString));
+//                        auto oldStatus = [change[NSKeyValueChangeOldKey] intValue];
+//                        auto newStatus = [change[NSKeyValueChangeNewKey] intValue];
+//
+//                        // Ignore spurious notifications
+//                        if (oldStatus == newStatus)
+//                            return;
+//
+//                        if (newStatus == AVPlayerItemStatusFailed)
+//                        {
+//                            auto errorMessage = playerItem.error != nil
+//                                              ? nsStringToJuce (playerItem.error.localizedDescription)
+//                                              : String();
+//
+//                            owner.notifyOwnerPreparationFinished (url, Result::fail (errorMessage), nullptr);
+//                        }
+//                        else if (newStatus == AVPlayerItemStatusReadyToPlay)
+//                        {
+//                            owner.notifyOwnerPreparationFinished (url, Result::ok(), owner.player.release());
+//                        }
+//                        else
+//                        {
+//                            jassertfalse;
+//                        }
+//                    }
+//                }
+//            };
+//
+//            //==============================================================================
+//            PlayerControllerBase& owner;
+//
+//            std::unique_ptr<AVURLAsset, NSObjectDeleter> asset;
+//            std::unique_ptr<NSArray<NSString*>, NSObjectDeleter> assetKeys;
+//            std::unique_ptr<AVPlayerItem, NSObjectDeleter> playerItem;
+//            std::unique_ptr<NSObject, NSObjectDeleter> playerItemPreparationStatusObserver;
+//            std::unique_ptr<AVPlayer, NSObjectDeleter> player;
+//
+//            //==============================================================================
+//            void checkAllKeysReadyFor (AVAsset* assetToCheck, const URL& url)
+//            {
+//                NSError* error = nil;
+//
+//                int successCount = 0;
+//
+//                for (NSString* key : assetKeys.get())
+//                {
+//                    switch ([assetToCheck statusOfValueForKey: key error: &error])
+//                    {
+//                        case AVKeyValueStatusLoaded:
+//                        {
+//                            ++successCount;
+//                            break;
+//                        }
+//                        case AVKeyValueStatusCancelled:
+//                        {
+//                            notifyOwnerPreparationFinished (url, Result::fail ("Loading cancelled"), nullptr);
+//                            return;
+//                        }
+//                        case AVKeyValueStatusFailed:
+//                        {
+//                            auto errorMessage = error != nil ? nsStringToJuce (error.localizedDescription) : String();
+//                            notifyOwnerPreparationFinished (url, Result::fail (errorMessage), nullptr);
+//                            return;
+//                        }
+//                        default:
+//                        {}
+//                    }
+//                }
+//
+//                jassert (successCount == (int) [assetKeys.get() count]);
+//                preparePlayerItem();
+//            }
+//
+//            void preparePlayerItem()
+//            {
+//                playerItem.reset ([[AVPlayerItem alloc] initWithAsset: asset.get()]);
+//
+//                attachPreparationStatusObserver();
+//
+//                player.reset ([[AVPlayer alloc] initWithPlayerItem: playerItem.get()]);
+//            }
+//
+//            //==============================================================================
+//            void attachPreparationStatusObserver()
+//            {
+//                [playerItem.get() addObserver: playerItemPreparationStatusObserver.get()
+//                                   forKeyPath: nsStringLiteral ("status")
+//                                      options: NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew
+//                                      context: this];
+//            }
+//
+//            void detachPreparationStatusObserver()
+//            {
+//                if (playerItem != nullptr && playerItemPreparationStatusObserver != nullptr)
+//                {
+//                    [playerItem.get() removeObserver: playerItemPreparationStatusObserver.get()
+//                                          forKeyPath: nsStringLiteral ("status")
+//                                             context: this];
+//                }
+//            }
+//
+//            //==============================================================================
+//            void notifyOwnerPreparationFinished (const URL& url, Result r, AVPlayer* preparedPlayer)
+//            {
+//                WeakReference<PlayerAsyncInitialiser> safeThis (this);
+//
+//                MessageManager::callAsync ([safeThis, url, r, preparedPlayer]() mutable
+//                {
+//                    if (safeThis != nullptr)
+//                        safeThis->owner.playerPreparationFinished (url, r, preparedPlayer);
+//                });
+//            }
+//
+//            JUCE_DECLARE_WEAK_REFERENCEABLE (PlayerAsyncInitialiser)
+//        };
+//
+//        //==============================================================================
+//        Pimpl& owner;
+//        bool useNativeControls;
+//
+//        PlayerAsyncInitialiser playerAsyncInitialiser;
+//        std::unique_ptr<NSObject, NSObjectDeleter> playerStatusObserver;
+//        std::unique_ptr<NSObject, NSObjectDeleter> playerItemPlaybackStatusObserver;
+//
+//        //==============================================================================
+//        PlayerControllerBase (Pimpl& ownerToUse, bool useNativeControlsIfAvailable)
+//            : owner (ownerToUse),
+//              useNativeControls (useNativeControlsIfAvailable),
+//              playerAsyncInitialiser (*this)
+//        {
+//            static JucePlayerStatusObserverClass playerObserverClass;
+//            playerStatusObserver.reset ([playerObserverClass.createInstance() init]);
+//            JucePlayerStatusObserverClass::setOwner (playerStatusObserver.get(), this);
+//
+//            static JucePlayerItemPlaybackStatusObserverClass itemObserverClass;
+//            playerItemPlaybackStatusObserver.reset ([itemObserverClass.createInstance() init]);
+//            JucePlayerItemPlaybackStatusObserverClass::setOwner (playerItemPlaybackStatusObserver.get(), this);
+//        }
+//
+//        //==============================================================================
+//        void attachPlayerStatusObserver()
+//        {
+//            [crtp().getPlayer() addObserver: playerStatusObserver.get()
+//                                 forKeyPath: nsStringLiteral ("rate")
+//                                    options: NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew
+//                                    context: this];
+//
+//            [crtp().getPlayer() addObserver: playerStatusObserver.get()
+//                                 forKeyPath: nsStringLiteral ("status")
+//                                    options: NSKeyValueObservingOptionNew
+//                                    context: this];
+//        }
+//
+//        void detachPlayerStatusObserver()
+//        {
+//            if (crtp().getPlayer() != nullptr && playerStatusObserver != nullptr)
+//            {
+//                    [crtp().getPlayer() removeObserver: playerStatusObserver.get()
+//                                            forKeyPath: nsStringLiteral ("rate")
+//                                               context: this];
+//
+//                    [crtp().getPlayer() removeObserver: playerStatusObserver.get()
+//                                            forKeyPath: nsStringLiteral ("status")
+//                                               context: this];
+//            }
+//        }
+//
+//        void attachPlaybackObserver()
+//        {
+//           #pragma clang diagnostic push
+//           #pragma clang diagnostic ignored "-Wundeclared-selector"
+//            [[NSNotificationCenter defaultCenter] addObserver: playerItemPlaybackStatusObserver.get()
+//                                                     selector: @selector (processNotification:)
+//                                                         name: AVPlayerItemDidPlayToEndTimeNotification
+//                                                       object: [crtp().getPlayer() currentItem]];
+//           #pragma clang diagnostic pop
+//        }
+//
+//        void detachPlaybackObserver()
+//        {
+//           #pragma clang diagnostic push
+//           #pragma clang diagnostic ignored "-Wundeclared-selector"
+//            [[NSNotificationCenter defaultCenter] removeObserver: playerItemPlaybackStatusObserver.get()];
+//           #pragma clang diagnostic pop
+//        }
+//
+//    private:
+//        //==============================================================================
+//        Derived& crtp() { return static_cast<Derived&> (*this); }
+//
+//        //==============================================================================
+//        void playerPreparationFinished (const URL& url, Result r, AVPlayer* preparedPlayer)
+//        {
+//            if (preparedPlayer != nil)
+//                crtp().setPlayer (preparedPlayer);
+//
+//            owner.playerPreparationFinished (url, r);
+//        }
+//
+//        void playbackReachedEndTime()
+//        {
+//            WeakReference<PlayerControllerBase> safeThis (this);
+//
+//            MessageManager::callAsync ([safeThis]() mutable
+//                                       {
+//                                           if (safeThis != nullptr)
+//                                               safeThis->owner.playbackReachedEndTime();
+//                                       });
+//        }
+//
+//        //==============================================================================
+//        void errorOccurred()
+//        {
+//            auto errorMessage = (crtp().getPlayer() != nil && crtp().getPlayer().error != nil)
+//                              ? nsStringToJuce (crtp().getPlayer().error.localizedDescription)
+//                              : String();
+//
+//            owner.errorOccurred (errorMessage);
+//        }
+//
+//        void playbackStarted()
+//        {
+//            owner.playbackStarted();
+//        }
+//
+//        void playbackStopped()
+//        {
+//            owner.playbackStopped();
+//        }
+//
+//        JUCE_DECLARE_WEAK_REFERENCEABLE (PlayerControllerBase)
+//    };
+//
+//   #if JUCE_MAC
+//    //==============================================================================
+//    class PlayerController  : public PlayerControllerBase<PlayerController>
+//    {
+//    public:
+//        PlayerController (Pimpl& ownerToUse, bool useNativeControlsIfAvailable)
+//            : PlayerControllerBase (ownerToUse, useNativeControlsIfAvailable)
+//        {
+//           #if JUCE_32BIT
+//            // 32-bit builds don't have AVPlayerView, so need to use a layer
+//            useNativeControls = false;
+//           #endif
+//
+//            if (useNativeControls)
+//            {
+//               #if ! JUCE_32BIT
+//                playerView = [[AVPlayerView alloc] init];
+//               #endif
+//            }
+//            else
+//            {
+//                view = [[NSView alloc] init];
+//                playerLayer = [[AVPlayerLayer alloc] init];
+//                [view setLayer: playerLayer];
+//            }
+//        }
+//
+//        ~PlayerController()
+//        {
+//           #if JUCE_32BIT
+//            [view release];
+//            [playerLayer release];
+//           #else
+//            [playerView release];
+//           #endif
+//        }
+//
+//        NSView* getView()
+//        {
+//           #if ! JUCE_32BIT
+//            if (useNativeControls)
+//                return playerView;
+//           #endif
+//
+//            return view;
+//        }
+//
+//        Result load (NSURL* url)
+//        {
+//            if (auto player = [AVPlayer playerWithURL: url])
+//            {
+//                setPlayer (player);
+//                return Result::ok();
+//            }
+//
+//            return Result::fail ("Couldn't open movie");
+//        }
+//
+//        void loadAsync (URL url)
+//        {
+//            playerAsyncInitialiser.loadAsync (url);
+//        }
+//
+//        void close() { setPlayer (nil); }
+//
+//        void setPlayer (AVPlayer* player)
+//        {
+//           #if ! JUCE_32BIT
+//            if (useNativeControls)
+//            {
+//                [playerView setPlayer: player];
+//                attachPlayerStatusObserver();
+//                attachPlaybackObserver();
+//                return;
+//            }
+//           #endif
+//
+//            [playerLayer setPlayer: player];
+//            attachPlayerStatusObserver();
+//            attachPlaybackObserver();
+//        }
+//
+//        AVPlayer* getPlayer() const
+//        {
+//           #if ! JUCE_32BIT
+//            if (useNativeControls)
+//                return [playerView player];
+//           #endif
+//
+//            return [playerLayer player];
+//        }
+//
+//    private:
+//        NSView* view = nil;
+//        AVPlayerLayer* playerLayer = nil;
+//       #if ! JUCE_32BIT
+//        // 32-bit builds don't have AVPlayerView
+//        AVPlayerView* playerView = nil;
+//       #endif
+//    };
+//>>>>>>> baf78b1e5f6e02ade4f209d7f45a60e43f9b53cd
    #else
     AVPlayerView* controller = nil;
    #endif

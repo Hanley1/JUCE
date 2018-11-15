@@ -81,42 +81,6 @@ public:
                                      : "The default value for this exporter is " + getDefaultWindowsTargetPlatformVersion()));
     }
 
-    void addPlatformToolsetToPropertyGroup (XmlElement& p) const
-    {
-        forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
-        e->createNewChildElement ("PlatformToolset")->addTextElement (getPlatformToolset());
-    }
-
-    void addWindowsTargetPlatformVersionToPropertyGroup (XmlElement& p) const
-    {
-        auto target = getWindowsTargetPlatformVersion();
-
-        if (target == "Latest")
-        {
-            forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
-            {
-                auto* child = e->createNewChildElement ("WindowsTargetPlatformVersion");
-
-                child->setAttribute ("Condition", "'$(WindowsTargetPlatformVersion)' == ''");
-                child->addTextElement ("$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))");
-            }
-        }
-        else
-        {
-            forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
-            e->createNewChildElement ("WindowsTargetPlatformVersion")->addTextElement (target);
-        }
-    }
-
-    void addIPPSettingToPropertyGroup (XmlElement& p) const
-    {
-        auto ippLibrary = getIPPLibrary();
-
-        if (ippLibrary.isNotEmpty())
-            forEachXmlChildElementWithTagName (p, e, "PropertyGroup")
-            e->createNewChildElement ("UseIntelIPP")->addTextElement (ippLibrary);
-    }
-
     void create (const OwnedArray<LibraryModule>&) const override
     {
         createResourcesAndIcon();
@@ -136,9 +100,17 @@ public:
     //==============================================================================
     void initialiseDependencyPathValues() override
     {
-        vst3Path.referTo (Value (new DependencyPathValueSource (getSetting (Ids::vst3Folder), Ids::vst3Path, TargetOS::windows)));
-        aaxPath.referTo  (Value (new DependencyPathValueSource (getSetting (Ids::aaxFolder),  Ids::aaxPath,  TargetOS::windows)));
-        rtasPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::rtasFolder), Ids::rtasPath, TargetOS::windows)));
+        vstLegacyPathValueWrapper.init ({ settings, Ids::vstLegacyFolder, nullptr },
+                                        getAppSettings().getStoredPath (Ids::vstLegacyPath, TargetOS::windows), TargetOS::windows);
+
+        vst3PathValueWrapper.init ({ settings, Ids::vst3Folder, nullptr },
+                                   getAppSettings().getStoredPath (Ids::vst3Path, TargetOS::windows), TargetOS::windows);
+
+        aaxPathValueWrapper.init ({ settings, Ids::aaxFolder, nullptr },
+                                  getAppSettings().getStoredPath (Ids::aaxPath,  TargetOS::windows), TargetOS::windows);
+
+        rtasPathValueWrapper.init ({ settings, Ids::rtasFolder, nullptr },
+                                   getAppSettings().getStoredPath (Ids::rtasPath, TargetOS::windows), TargetOS::windows);
     }
 
     //==============================================================================
@@ -358,7 +330,7 @@ public:
                            "The folder in which the compiled Unity plugin binary and associated C# GUI script should be placed.");
 
             if (project.shouldBuildVST())
-                props.add (new TextPropertyComponentWithEnablement (vstBinaryLocation, pluginBinaryCopyStepValue, "VST (legacy) Binary Location",
+                props.add (new TextPropertyComponentWithEnablement (vstBinaryLocation, pluginBinaryCopyStepValue, "VST (Legacy) Binary Location",
                                                                     1024, false),
                            "The folder in which the compiled lehacy VST binary should be placed.");
 
@@ -451,6 +423,15 @@ public:
 
                 if (config.shouldLinkIncremental())
                     e->createNewChildElement ("LinkIncremental")->addTextElement ("true");
+
+                e->createNewChildElement ("PlatformToolset")->addTextElement (owner.getPlatformToolset());
+
+                addWindowsTargetPlatformToConfig (*e);
+
+                auto ippLibrary = owner.getIPPLibrary();
+
+                if (ippLibrary.isNotEmpty())
+                    e->createNewChildElement ("UseIntelIPP")->addTextElement (ippLibrary);
             }
 
             {
@@ -470,11 +451,6 @@ public:
                 p->setAttribute ("Project", "$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props");
                 p->setAttribute ("Condition", "exists('$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props')");
                 p->setAttribute ("Label", "LocalAppDataPlatform");
-            }
-
-            {
-                auto* e = projectXml.createNewChildElement ("PropertyGroup");
-                e->setAttribute ("Label", "UserMacros");
             }
 
             {
@@ -747,10 +723,6 @@ public:
                 auto* e = projectXml.createNewChildElement ("ImportGroup");
                 e->setAttribute ("Label", "ExtensionTargets");
             }
-
-            getOwner().addPlatformToolsetToPropertyGroup (projectXml);
-            getOwner().addWindowsTargetPlatformVersionToPropertyGroup (projectXml);
-            getOwner().addIPPSettingToPropertyGroup (projectXml);
         }
 
         String getProjectType() const
@@ -1068,7 +1040,7 @@ public:
         //==============================================================================
         RelativePath getAAXIconFile() const
         {
-            RelativePath aaxSDK (owner.getAAXPathValue().toString(), RelativePath::projectFolder);
+            RelativePath aaxSDK (owner.getAAXPathString(), RelativePath::projectFolder);
             RelativePath projectIcon ("icon.ico", RelativePath::buildTargetFolder);
 
             if (getOwner().getTargetFolder().getChildFile ("icon.ico").existsAsFile())
@@ -1083,7 +1055,7 @@ public:
         {
             if (type == AAXPlugIn)
             {
-                RelativePath aaxSDK (owner.getAAXPathValue().toString(), RelativePath::projectFolder);
+                RelativePath aaxSDK (owner.getAAXPathString(), RelativePath::projectFolder);
                 RelativePath aaxLibsFolder = aaxSDK.getChildFile ("Libs");
                 RelativePath bundleScript  = aaxSDK.getChildFile ("Utilities").getChildFile ("CreatePackage.bat");
                 RelativePath iconFilePath  = getAAXIconFile();
@@ -1174,13 +1146,13 @@ public:
             {
             case AAXPlugIn:
                 {
-                    auto aaxLibsFolder = RelativePath (owner.getAAXPathValue().toString(), RelativePath::projectFolder).getChildFile ("Libs");
+                    auto aaxLibsFolder = RelativePath (owner.getAAXPathString(), RelativePath::projectFolder).getChildFile ("Libs");
                     defines.set ("JucePlugin_AAXLibs_path", createRebasedPath (aaxLibsFolder));
                 }
                 break;
             case RTASPlugIn:
                 {
-                    RelativePath rtasFolder (owner.getRTASPathValue().toString(), RelativePath::projectFolder);
+                    RelativePath rtasFolder (owner.getRTASPathString(), RelativePath::projectFolder);
                     defines.set ("JucePlugin_WinBag_path", createRebasedPath (rtasFolder.getChildFile ("WinBag")));
                 }
                 break;
@@ -1202,7 +1174,7 @@ public:
             StringArray searchPaths;
             if (type == RTASPlugIn)
             {
-                RelativePath rtasFolder (owner.getRTASPathValue().toString(), RelativePath::projectFolder);
+                RelativePath rtasFolder (owner.getRTASPathString(), RelativePath::projectFolder);
 
                 static const char* p[] = { "AlturaPorts/TDMPlugins/PluginLibrary/EffectClasses",
                                            "AlturaPorts/TDMPlugins/PluginLibrary/ProcessClasses",
@@ -1315,6 +1287,23 @@ public:
         File getVCProjFiltersFile() const                            { return getOwner().getProjectFile (getFiltersFileSuffix(), getName()); }
 
         String createRebasedPath (const RelativePath& path) const    {  return getOwner().createRebasedPath (path); }
+
+        void addWindowsTargetPlatformToConfig (XmlElement& e) const
+        {
+            auto target = owner.getWindowsTargetPlatformVersion();
+
+            if (target == "Latest")
+            {
+                auto* child = e.createNewChildElement ("WindowsTargetPlatformVersion");
+
+                child->setAttribute ("Condition", "'$(WindowsTargetPlatformVersion)' == ''");
+                child->addTextElement ("$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))");
+            }
+            else
+            {
+                e.createNewChildElement ("WindowsTargetPlatformVersion")->addTextElement (target);
+            }
+        }
 
     protected:
         const MSVCProjectExporterBase& owner;
