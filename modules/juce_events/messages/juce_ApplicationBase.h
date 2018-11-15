@@ -270,7 +270,7 @@ public:
     static int main (int argc, const char* argv[]);
 
     static void appWillTerminateByForce();
-    typedef JUCEApplicationBase* (*CreateInstanceFunction)();
+    using CreateInstanceFunction = JUCEApplicationBase* (*)();
     static CreateInstanceFunction createInstance;
 
    #if JUCE_IOS
@@ -290,8 +290,6 @@ private:
     bool stillInitialising = true;
 
     struct MultipleInstanceHandler;
-    friend struct MultipleInstanceHandler;
-    friend struct ContainerDeletePolicy<MultipleInstanceHandler>;
     std::unique_ptr<MultipleInstanceHandler> multipleInstanceHandler;
 
     JUCE_DECLARE_NON_COPYABLE (JUCEApplicationBase)

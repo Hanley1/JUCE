@@ -143,7 +143,7 @@ public:
         JUCE_DECLARE_NON_COPYABLE (SharedPointer)
     };
 
-    typedef ReferenceCountedObjectPtr<SharedPointer> SharedRef;
+    using SharedRef = ReferenceCountedObjectPtr<SharedPointer>;
 
     //==============================================================================
     /**
@@ -166,11 +166,11 @@ public:
         /** The first call to this method will create an internal object that is shared by all weak
             references to the object.
         */
-        SharedPointer* getSharedPointer (ObjectType* object)
+        SharedRef getSharedPointer (ObjectType* object)
         {
             if (sharedPointer == nullptr)
             {
-                sharedPointer = new SharedPointer (object);
+                sharedPointer = *new SharedPointer (object);
             }
             else
             {
@@ -206,9 +206,12 @@ public:
 private:
     SharedRef holder;
 
-    static inline SharedPointer* getRef (ObjectType* o)
+    static inline SharedRef getRef (ObjectType* o)
     {
-        return (o != nullptr) ? o->masterReference.getSharedPointer (o) : nullptr;
+        if (o != nullptr)
+            return o->masterReference.getSharedPointer (o);
+
+        return {};
     }
 };
 
@@ -234,9 +237,9 @@ private:
      @see WeakReference, WeakReference::Master
 */
 #define JUCE_DECLARE_WEAK_REFERENCEABLE(Class) \
-    struct WeakRefMaster  : public WeakReference<Class>::Master { ~WeakRefMaster() { this->clear(); } }; \
+    struct WeakRefMaster  : public juce::WeakReference<Class>::Master { ~WeakRefMaster() { this->clear(); } }; \
     WeakRefMaster masterReference; \
-    friend class WeakReference<Class>; \
+    friend class juce::WeakReference<Class>; \
 
 
 } // namespace juce

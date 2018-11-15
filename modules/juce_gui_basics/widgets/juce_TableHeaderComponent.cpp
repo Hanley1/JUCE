@@ -156,7 +156,7 @@ void TableHeaderComponent::moveColumn (const int columnId, int newIndex)
     auto currentIndex = getIndexOfColumnId (columnId, false);
     newIndex = visibleIndexToTotalIndex (newIndex);
 
-    if (columns [currentIndex] != 0 && currentIndex != newIndex)
+    if (columns[currentIndex] != nullptr && currentIndex != newIndex)
     {
         columns.move (currentIndex, newIndex);
         sendColumnsChanged();
@@ -499,11 +499,11 @@ void TableHeaderComponent::reactToMenuItem (const int menuReturnId, const int /*
 
 void TableHeaderComponent::paint (Graphics& g)
 {
-    LookAndFeel& lf = getLookAndFeel();
+    auto& lf = getLookAndFeel();
 
     lf.drawTableHeaderBackground (g, *this);
 
-    const Rectangle<int> clip (g.getClipBounds());
+    auto clip = g.getClipBounds();
 
     int x = 0;
 

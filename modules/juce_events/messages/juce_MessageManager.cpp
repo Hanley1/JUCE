@@ -294,7 +294,7 @@ bool MessageManager::Lock::tryAcquire (bool lockIsMandatory) const noexcept
 
     try
     {
-        blockingMessage = new BlockingMessage (this);
+        blockingMessage = *new BlockingMessage (this);
     }
     catch (...)
     {
@@ -349,7 +349,7 @@ void MessageManager::Lock::exit() const noexcept
         lockGained.set (0);
 
         if (mm != nullptr)
-            mm->threadWithLock = 0;
+            mm->threadWithLock = {};
 
         if (blockingMessage != nullptr)
         {

@@ -516,7 +516,7 @@ private:
             if (useLog && low > 0 && high > 0)
                 return expf (logf (low) * (1.0f - alpha) + logf (high) * alpha);
 
-                return low + (high - low) * alpha;
+            return low + (high - low) * alpha;
         }
 
         static float toIntIfNecessary (const LADSPA_PortRangeHintDescriptor& desc, float value)
@@ -608,8 +608,9 @@ void LADSPAPluginFormat::findAllTypesForFile (OwnedArray<PluginDescription>& res
     }
 }
 
-void LADSPAPluginFormat::createPluginInstance (const PluginDescription& desc, double sampleRate, int blockSize,
-                                               void* userData, void (*callback) (void*, AudioPluginInstance*, const String&))
+void LADSPAPluginFormat::createPluginInstance (const PluginDescription& desc,
+                                               double sampleRate, int blockSize,
+                                               void* userData, PluginCreationCallback callback)
 {
     std::unique_ptr<LADSPAPluginInstance> result;
 
