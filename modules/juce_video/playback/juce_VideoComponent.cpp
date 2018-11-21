@@ -34,10 +34,13 @@ namespace juce
 #endif
 
 //==============================================================================
-VideoComponent::VideoComponent()  : pimpl (new Pimpl())
+	VideoComponent::VideoComponent(bool useNativeControlsIfAvailable)
+		: pimpl(new Pimpl(*this, useNativeControlsIfAvailable))
+
 {
     addAndMakeVisible (pimpl.get());
 }
+
 
 VideoComponent::~VideoComponent()
 {

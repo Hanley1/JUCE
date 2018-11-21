@@ -47,7 +47,7 @@ public:
         Use the load() method to open a video once you've added this component to
         a parent (or put it on the desktop).
     */
-    VideoComponent();
+    VideoComponent(bool);
 
     /** Destructor. */
     ~VideoComponent();
@@ -120,6 +120,23 @@ public:
         @returns the volume in the range 0 (silent) to 1.0 (full)
     */
     float getAudioVolume() const;
+
+   #if JUCE_SYNC_VIDEO_VOLUME_WITH_OS_MEDIA_VOLUME
+    /** Set this callback to be notified whenever OS global media volume changes.
+        Currently used on Android only.
+     */
+    std::function<void()> onGlobalMediaVolumeChanged;
+   #endif
+
+    /** Set this callback to be notified whenever the playback starts. */
+    std::function<void()> onPlaybackStarted;
+
+    /** Set this callback to be notified whenever the playback stops. */
+    std::function<void()> onPlaybackStopped;
+
+    /** Set this callback to be notified whenever an error occurs. Upon error, you
+        may need to load the video again. */
+    std::function<void (const String& /*error*/)> onErrorOccurred;
 
 private:
     //==============================================================================
