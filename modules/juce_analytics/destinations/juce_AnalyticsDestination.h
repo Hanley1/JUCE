@@ -81,7 +81,7 @@ struct JUCE_API  AnalyticsDestination
     AnalyticsDestination() = default;
 
     /** Destructor. */
-    virtual ~AnalyticsDestination() {}
+    virtual ~AnalyticsDestination() = default;
 
     /**
         When an AnalyticsDestination is added to an Analytics object this method
