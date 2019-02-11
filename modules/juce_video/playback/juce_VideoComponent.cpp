@@ -121,6 +121,8 @@ double VideoComponent::getPlaySpeed() const                 { return pimpl->getS
 
 void VideoComponent::setAudioVolume (float newVolume)       { pimpl->setVolume (newVolume); }
 float VideoComponent::getAudioVolume() const                { return pimpl->getVolume(); }
+    
+void VideoComponent::setAudioOutput(String audioOutputName) {  pimpl->setAudioOutput(audioOutputName); }
 
 void VideoComponent::resized()
 {

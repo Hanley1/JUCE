@@ -183,6 +183,15 @@ struct VideoComponent::Pimpl   : public Base
 
         return 0.0f;
     }
+    
+    void setAudioOutput(String audioOutputName)
+    {
+       if (auto* p = playerController.getPlayer())
+       {
+           [p.audioOutputDeviceUniqueID: (NSString *)&audioOutputName];
+       }
+        //[playerController.getPlayer().audioOutputDeviceUniqueID : audioOutputName ];
+   }
 
     File currentFile;
     URL currentURL;

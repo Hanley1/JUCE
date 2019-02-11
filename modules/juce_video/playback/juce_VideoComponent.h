@@ -151,6 +151,9 @@ public:
         @returns the volume in the range 0 (silent) to 1.0 (full)
     */
     float getAudioVolume() const;
+    
+    void setAudioOutput(String audioOutputName);
+    
 
    #if JUCE_SYNC_VIDEO_VOLUME_WITH_OS_MEDIA_VOLUME
     /** Set this callback to be notified whenever OS global media volume changes.
