@@ -108,6 +108,10 @@ public:
             A value of 0 indicates that you don't care what rate is used, and the
             device will choose a sensible rate for you.
         */
+        
+        String outputDeviceUID;
+        String inputDeviceUID;
+        
         double sampleRate = 0;
 
         /** The buffer size, in samples.

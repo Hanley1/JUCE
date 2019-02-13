@@ -2037,6 +2037,8 @@ public:
         outputDeviceNames.clear();
         inputIds.clear();
         outputIds.clear();
+        inputUids.clear();
+        outputUids.clear();
 
         UInt32 size;
 
@@ -2076,6 +2078,22 @@ public:
                         {
                             outputDeviceNames.add (nameString);
                             outputIds.add (devs[i]);
+                        }
+                        
+                        CFStringRef uidString;
+                        UInt32 propertySize = sizeof(uidString);
+                        pa.mSelector = kAudioDevicePropertyDeviceUID;
+                        pa.mScope = kAudioObjectPropertyScopeGlobal;
+                        pa.mElement = kAudioObjectPropertyElementMaster;
+                        
+                        if (AudioObjectGetPropertyData(devs[i], &pa, 0, nullptr, &propertySize, &uidString) == noErr) {
+                            String uid = String::fromCFString(uidString);
+                            
+                            if (numIns > 0)
+                                inputUids.add(uid);
+                            
+                            if (numOuts > 0)
+                                outputUids.add(uid);
                         }
                     }
                 }
@@ -2189,6 +2207,23 @@ public:
         combo->addDevice (out.release(), false, true);
         return combo.release();
     }
+    
+    String getDeviceUID (String deviceName,
+                                 const bool isInput) const override
+    {
+        if (isInput)
+        {
+            auto inputIndex = inputDeviceNames.indexOf (deviceName);
+            return inputUids[inputIndex];
+        }
+        else
+        {
+            auto outputIndex = outputDeviceNames.indexOf (deviceName);
+            return outputUids[outputIndex];
+        }
+        
+        return String();
+    }
 
     void audioDeviceListChanged()
     {
@@ -2205,6 +2240,7 @@ public:
 private:
     StringArray inputDeviceNames, outputDeviceNames;
     Array<AudioDeviceID> inputIds, outputIds;
+    StringArray inputUids, outputUids;
 
     bool hasScanned = false;
 

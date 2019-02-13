@@ -525,6 +525,9 @@ String AudioDeviceManager::setAudioDeviceSetup (const AudioDeviceSetup& newSetup
         outputChannels = newSetup.outputChannels;
 
     currentSetup = newSetup;
+    
+    currentSetup.inputDeviceUID = type->getDeviceUID(currentSetup.inputDeviceName, true);
+    currentSetup.outputDeviceUID = type->getDeviceUID(currentSetup.outputDeviceName, false);
 
     if (inputChannels.isZero() && outputChannels.isZero())
     {

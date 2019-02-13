@@ -184,14 +184,13 @@ struct VideoComponent::Pimpl   : public Base
         return 0.0f;
     }
     
-    void setAudioOutput(String audioOutputName)
+    void setAudioOutput(String outputDeviceUID)
     {
 #if JUCE_MAC
        if (auto* p = playerController.getPlayer())
        {
-           [p.audioOutputDeviceUniqueID: (NSString *)&audioOutputName];
+           p.audioOutputDeviceUniqueID = juceStringToNS(outputDeviceUID);
        }
-        //[playerController.getPlayer().audioOutputDeviceUniqueID : audioOutputName ];
 #endif
    }
 

@@ -152,7 +152,7 @@ public:
     */
     float getAudioVolume() const;
     
-    void setAudioOutput(String audioOutputName);
+    void setAudioOutput(String outputDeviceUID);
     
 
    #if JUCE_SYNC_VIDEO_VOLUME_WITH_OS_MEDIA_VOLUME
