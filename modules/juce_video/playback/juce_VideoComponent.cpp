@@ -122,7 +122,12 @@ double VideoComponent::getPlaySpeed() const                 { return pimpl->getS
 void VideoComponent::setAudioVolume (float newVolume)       { pimpl->setVolume (newVolume); }
 float VideoComponent::getAudioVolume() const                { return pimpl->getVolume(); }
     
-void VideoComponent::setAudioOutput(String outputDeviceUID) {  pimpl->setAudioOutput(outputDeviceUID); }
+void VideoComponent::setAudioOutput(String outputDeviceUID) 
+{  
+#if JUCE_MAC
+	pimpl->setAudioOutput(outputDeviceUID); 
+#endif
+}
 
 void VideoComponent::resized()
 {
