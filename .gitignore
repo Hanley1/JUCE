@@ -21,6 +21,7 @@
 xcuserdata
 *.xccheckout
 *.xcscmblueprint
+*.xcscheme
 contents.xcworkspacedata
 .DS_Store
 .svn
@@ -66,4 +67,3 @@ profile
 **/doxygen/doc
 **/doxygen/build
 extras/Projucer/JUCECompileEngine.dylib
-examples
