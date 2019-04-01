@@ -93,6 +93,9 @@ public:
         @param forInput     if true, this means that a default input device should be
                             returned; if false, it should return the default output
     */
+    
+    virtual String getDeviceUID (String deviceName, bool isInput) const {return String();}
+    
     virtual int getDefaultDeviceIndex (bool forInput) const = 0;
 
     /** Returns the index of a given device in the list of device names.
@@ -126,7 +129,7 @@ public:
     class Listener
     {
     public:
-        virtual ~Listener() {}
+        virtual ~Listener() = default;
 
         /** Called when the list of available audio devices changes. */
         virtual void audioDeviceListChanged() = 0;

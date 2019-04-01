@@ -68,9 +68,11 @@ namespace Ids
     DECLARE_ID (jucePath);
     DECLARE_ID (defaultJuceModulePath);
     DECLARE_ID (defaultUserModulePath);
+    DECLARE_ID (vstLegacyFolder);
     DECLARE_ID (vst3Folder);
     DECLARE_ID (rtasFolder);
     DECLARE_ID (auFolder);
+    DECLARE_ID (vstLegacyPath);
     DECLARE_ID (vst3Path);
     DECLARE_ID (rtasPath);
     DECLARE_ID (aaxPath);
@@ -96,6 +98,7 @@ namespace Ids
     DECLARE_ID (libraryPath);
     DECLARE_ID (customXcodeFlags);
     DECLARE_ID (customXcassetsFolder);
+    DECLARE_ID (customLaunchStoryboard);
     DECLARE_ID (customXcodeResourceFolders);
     DECLARE_ID (plistPreprocessorDefinitions);
     DECLARE_ID (customPList);
@@ -125,6 +128,7 @@ namespace Ids
     DECLARE_ID (osxCompatibility);
     DECLARE_ID (osxArchitecture);
     DECLARE_ID (iosCompatibility);
+    DECLARE_ID (xcodeSubprojects);
     DECLARE_ID (extraFrameworks);
     DECLARE_ID (frameworkSearchPaths);
     DECLARE_ID (extraCustomFrameworks);
@@ -181,20 +185,25 @@ namespace Ids
     DECLARE_ID (showAllCode);
     DECLARE_ID (useLocalCopy);
     DECLARE_ID (overwriteOnSave);
+    DECLARE_ID (hardenedRuntime);
+    DECLARE_ID (hardenedRuntimeOptions);
     DECLARE_ID (microphonePermissionNeeded);
     DECLARE_ID (microphonePermissionsText);
     DECLARE_ID (cameraPermissionNeeded);
     DECLARE_ID (cameraPermissionText);
     DECLARE_ID (androidJavaLibs);
+    DECLARE_ID (androidAdditionalJavaFolders);
+    DECLARE_ID (androidAdditionalResourceFolders);
     DECLARE_ID (androidRepositories);
     DECLARE_ID (androidDependencies);
     DECLARE_ID (androidBuildConfigRemoteNotifsConfigFile);
     DECLARE_ID (androidAdditionalXmlValueResources);
     DECLARE_ID (androidAdditionalDrawableResources);
     DECLARE_ID (androidAdditionalRawValueResources);
-    DECLARE_ID (androidActivityClass);
-    DECLARE_ID (androidActivitySubClassName);
-    DECLARE_ID (androidActivityBaseClassName);
+//    DECLARE_ID (androidActivityClass);  // DEPRECATED!
+    const Identifier androidCustomActivityClass ("androidActivitySubClassName"); // old name is very confusing, but we need to remain backward compatible
+//    DECLARE_ID (androidActivityBaseClassName); // DEPRECATED!
+    DECLARE_ID (androidCustomApplicationClass);
     DECLARE_ID (androidVersionCode);
     DECLARE_ID (androidSDKPath);
     DECLARE_ID (androidNDKPath);
@@ -212,6 +221,7 @@ namespace Ids
     DECLARE_ID (androidRemoteNotificationsConfigFile);
     DECLARE_ID (androidEnableContentSharing);
     DECLARE_ID (androidMinimumSDK);
+    DECLARE_ID (androidTargetSDK);
     DECLARE_ID (androidOtherPermissions);
     DECLARE_ID (androidKeyStore);
     DECLARE_ID (androidKeyStorePass);
@@ -329,6 +339,8 @@ namespace Ids
     DECLARE_ID (pluginAAXCategory);
     DECLARE_ID (pluginAAXDisableBypass);
     DECLARE_ID (pluginAAXDisableMultiMono);
+    DECLARE_ID (pluginVSTNumMidiInputs);
+    DECLARE_ID (pluginVSTNumMidiOutputs);
     DECLARE_ID (exporters);
     DECLARE_ID (website);
     DECLARE_ID (mainClass);
@@ -336,6 +348,9 @@ namespace Ids
     DECLARE_ID (buildEnabled);
     DECLARE_ID (continuousRebuildEnabled);
     DECLARE_ID (warningsEnabled);
+    DECLARE_ID (projectLineFeed);
+    DECLARE_ID (compilerFlagSchemes);
+    DECLARE_ID (compilerFlagScheme);
 
     const Identifier ID ("id");
     const Identifier ID_uppercase ("ID");

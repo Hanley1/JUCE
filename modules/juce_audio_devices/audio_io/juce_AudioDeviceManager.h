@@ -76,7 +76,7 @@ public:
     AudioDeviceManager();
 
     /** Destructor. */
-    ~AudioDeviceManager();
+    ~AudioDeviceManager() override;
 
     //==============================================================================
     /**
@@ -108,6 +108,10 @@ public:
             A value of 0 indicates that you don't care what rate is used, and the
             device will choose a sensible rate for you.
         */
+        
+        String outputDeviceUID;
+        String inputDeviceUID;
+        
         double sampleRate = 0;
 
         /** The buffer size, in samples.
@@ -432,10 +436,10 @@ public:
     */
     LevelMeter::Ptr getInputLevelGetter() noexcept          { return inputLevelGetter; }
 
-    /** Returns a reference-counted object that can be used to get the current input level.
+    /** Returns a reference-counted object that can be used to get the current output level.
 
         You need to store this object locally to ensure that the reference count is incremented
-        and decremented properly. The current input level value can be read using getCurrentLevel().
+        and decremented properly. The current output level value can be read using getCurrentLevel().
     */
     LevelMeter::Ptr getOutputLevelGetter() noexcept         { return outputLevelGetter; }
 
@@ -470,7 +474,7 @@ private:
     std::unique_ptr<AudioIODevice> currentAudioDevice;
     Array<AudioIODeviceCallback*> callbacks;
     int numInputChansNeeded = 0, numOutputChansNeeded = 2;
-    String currentDeviceType;
+    String preferredDeviceName, currentDeviceType;
     BigInteger inputChannels, outputChannels;
     std::unique_ptr<XmlElement> lastExplicitSettings;
     mutable bool listNeedsScanning = true;

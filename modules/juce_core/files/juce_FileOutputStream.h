@@ -53,6 +53,7 @@ public:
             stream.setPosition (0);
             stream.truncate();
             ...
+        }
         @endcode
 
 
@@ -66,7 +67,7 @@ public:
                       size_t bufferSizeToUse = 16384);
 
     /** Destructor. */
-    ~FileOutputStream();
+    ~FileOutputStream() override;
 
     //==============================================================================
     /** Returns the file that this stream is writing to.

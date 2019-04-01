@@ -49,8 +49,6 @@ struct HostPacketDecoder
             auto packetTimestamp = reader.read<PacketTimestamp>();
             deviceIndex &= 63; // top bit is used as a direction indicator
 
-            bool topologyChanged = false;
-
             for (;;)
             {
                 auto nextMessageType = getMessageType (reader);
@@ -58,14 +56,9 @@ struct HostPacketDecoder
                 if (nextMessageType == 0)
                     break;
 
-                topologyChanged |= messageIncludesTopologyChange (nextMessageType);
-
                 if (! processNextMessage (handler, reader, (MessageFromDevice) nextMessageType, deviceIndex, packetTimestamp))
                     break;
             }
-
-            if (topologyChanged)
-                handler.notifyDetectorTopologyChanged();
         }
     }
 
@@ -75,22 +68,6 @@ struct HostPacketDecoder
             return 0;
 
         return reader.read<MessageType>().get();
-    }
-
-    static bool messageIncludesTopologyChange (uint32 messageType)
-    {
-        switch ((MessageFromDevice) messageType)
-        {
-            case MessageFromDevice::deviceTopology:
-            case MessageFromDevice::deviceTopologyExtend:
-            case MessageFromDevice::deviceTopologyEnd:
-            case MessageFromDevice::deviceVersion:
-            case MessageFromDevice::deviceName:
-                return true;
-
-            default:
-                return false;
-        }
     }
 
     static bool processNextMessage (Handler& handler, Packed7BitArrayReader& reader,
@@ -187,8 +164,11 @@ struct HostPacketDecoder
     {
         DeviceStatus status;
 
-        for (uint32 i = 0; i < sizeof (BlockSerialNumber); ++i)
-            status.serialNumber.serial[i] = (uint8) reader.readBits (7);
+        for (uint32 i = 0; i < BlockSerialNumber::maxLength; ++i)
+        {
+            status.serialNumber.data[i] = (uint8) reader.readBits (7);
+            ++status.serialNumber.length;
+        }
 
         status.index            = (TopologyIndex) reader.readBits (topologyIndexBits);
         status.batteryLevel     = reader.read<BatteryLevel>();
@@ -217,7 +197,7 @@ struct HostPacketDecoder
         version.version.length = (uint8) reader.readBits (7);
 
         for (uint32 i = 0; i < version.version.length; ++i)
-            version.version.version[i] = (uint8) reader.readBits (7);
+            version.version.data[i] = (uint8) reader.readBits (7);
 
         handler.handleVersion (version);
         return true;
@@ -231,7 +211,7 @@ struct HostPacketDecoder
         name.name.length = (uint8) reader.readBits (7);
 
         for (uint32 i = 0; i < name.name.length; ++i)
-            name.name.name[i] = (uint8) reader.readBits (7);
+            name.name.data[i] = (uint8) reader.readBits (7);
 
         handler.handleName (name);
         return true;

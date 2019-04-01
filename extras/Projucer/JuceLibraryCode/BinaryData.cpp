@@ -5514,8 +5514,18 @@ static const unsigned char temp_binary_data_27[] =
 "        // you add any child components.\r\n"
 "        setSize (800, 600);\r\n"
 "\r\n"
-"        // specify the number of input and output channels that we want to open\r\n"
-"        setAudioChannels (2, 2);\r\n"
+"        // Some platforms require permissions to open input channels so request that here\r\n"
+"        if (RuntimePermissions::isRequired (RuntimePermissions::recordAudio)\r\n"
+"            && ! RuntimePermissions::isGranted (RuntimePermissions::recordAudio))\r\n"
+"        {\r\n"
+"            RuntimePermissions::request (RuntimePermissions::recordAudio,\r\n"
+"                                         [&] (bool granted) { if (granted)  setAudioChannels (2, 2); });\r\n"
+"        }\r\n"
+"        else\r\n"
+"        {\r\n"
+"            // Specify the number of input and output channels that we want to open\r\n"
+"            setAudioChannels (2, 2);\r\n"
+"        }\r\n"
 "    }\r\n"
 "\r\n"
 "    ~%%content_component_class%%()\r\n"
@@ -5601,8 +5611,18 @@ static const unsigned char temp_binary_data_28[] =
 "    // you add any child components.\r\n"
 "    setSize (800, 600);\r\n"
 "\r\n"
-"    // specify the number of input and output channels that we want to open\r\n"
-"    setAudioChannels (2, 2);\r\n"
+"    // Some platforms require permissions to open input channels so request that here\r\n"
+"    if (RuntimePermissions::isRequired (RuntimePermissions::recordAudio)\r\n"
+"        && ! RuntimePermissions::isGranted (RuntimePermissions::recordAudio))\r\n"
+"    {\r\n"
+"        RuntimePermissions::request (RuntimePermissions::recordAudio,\r\n"
+"                                     [&] (bool granted) { if (granted)  setAudioChannels (2, 2); });\r\n"
+"    }\r\n"
+"    else\r\n"
+"    {\r\n"
+"        // Specify the number of input and output channels that we want to open\r\n"
+"        setAudioChannels (2, 2);\r\n"
+"    }\r\n"
 "}\r\n"
 "\r\n"
 "%%content_component_class%%::~%%content_component_class%%()\r\n"
@@ -6538,9 +6558,14 @@ static const unsigned char temp_binary_data_42[] =
 "        {\r\n"
 "            setUsingNativeTitleBar (true);\r\n"
 "            setContentOwned (new %%content_component_class%%(), true);\r\n"
-"            setResizable (true, true);\r\n"
 "\r\n"
+"           #if JUCE_IOS || JUCE_ANDROID\r\n"
+"            setFullScreen (true);\r\n"
+"           #else\r\n"
+"            setResizable (true, true);\r\n"
 "            centreWithSize (getWidth(), getHeight());\r\n"
+"           #endif\r\n"
+"\r\n"
 "            setVisible (true);\r\n"
 "        }\r\n"
 "\r\n"
@@ -6644,7 +6669,13 @@ static const unsigned char temp_binary_data_43[] =
 "            setUsingNativeTitleBar (true);\r\n"
 "            setContentOwned (new %%content_component_class%%(), true);\r\n"
 "\r\n"
+"           #if JUCE_IOS || JUCE_ANDROID\r\n"
+"            setFullScreen (true);\r\n"
+"           #else\r\n"
+"            setResizable (true, true);\r\n"
 "            centreWithSize (getWidth(), getHeight());\r\n"
+"           #endif\r\n"
+"\r\n"
 "            setVisible (true);\r\n"
 "        }\r\n"
 "\r\n"
@@ -7277,7 +7308,7 @@ static const unsigned char temp_binary_data_55[] =
 "using System.Collections.Generic;\n"
 "using System.Runtime.InteropServices;\n"
 "\n"
-"public class %%plugin_name%%GUI : IAudioEffectPluginGUI\n"
+"public class %%plugin_class_name%%GUI : IAudioEffectPluginGUI\n"
 "{\n"
 "    public override string Name           { get { return \"%%plugin_name%%\"; } }\n"
 "    public override string Description    { get { return \"%%plugin_description%%\"; } }\n"
@@ -7449,7 +7480,7 @@ static const unsigned char temp_binary_data_55[] =
 "    }\n"
 "}\n"
 "\n"
-"#endif";
+"#endif\n";
 
 const char* jucer_UnityPluginGUIScript_cs = (const char*) temp_binary_data_55;
 
@@ -7807,8 +7838,8 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0xd11e6d35:  numBytes = 2085; return jucer_AnimatedComponentSimpleTemplate_h;
         case 0x6cf2645e:  numBytes = 1563; return jucer_AnimatedComponentTemplate_cpp;
         case 0x97b055e3:  numBytes = 1201; return jucer_AnimatedComponentTemplate_h;
-        case 0xfb6f6d96:  numBytes = 3194; return jucer_AudioComponentSimpleTemplate_h;
-        case 0xafccbd3f:  numBytes = 2635; return jucer_AudioComponentTemplate_cpp;
+        case 0xfb6f6d96:  numBytes = 3693; return jucer_AudioComponentSimpleTemplate_h;
+        case 0xafccbd3f:  numBytes = 3094; return jucer_AudioComponentTemplate_cpp;
         case 0x915d7304:  numBytes = 1374; return jucer_AudioComponentTemplate_h;
         case 0x27c5a93a:  numBytes = 1356; return jucer_AudioPluginEditorTemplate_cpp;
         case 0x4d0721bf:  numBytes = 977; return jucer_AudioPluginEditorTemplate_h;
@@ -7822,8 +7853,8 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0x28d496ad:  numBytes = 1233; return jucer_InlineComponentTemplate_h;
         case 0x8905395b:  numBytes = 473; return jucer_MainConsoleAppTemplate_cpp;
         case 0x5e5ea047:  numBytes = 2021; return jucer_MainTemplate_NoWindow_cpp;
-        case 0xda2391f8:  numBytes = 4012; return jucer_MainTemplate_SimpleWindow_cpp;
-        case 0x400bc026:  numBytes = 3972; return jucer_MainTemplate_Window_cpp;
+        case 0xda2391f8:  numBytes = 4127; return jucer_MainTemplate_SimpleWindow_cpp;
+        case 0x400bc026:  numBytes = 4127; return jucer_MainTemplate_Window_cpp;
         case 0xf4842835:  numBytes = 1491; return jucer_NewComponentTemplate_cpp;
         case 0xe7bf237a:  numBytes = 646; return jucer_NewComponentTemplate_h;
         case 0x02a2a077:  numBytes = 278; return jucer_NewCppFileTemplate_cpp;
@@ -7835,7 +7866,7 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
         case 0xbc050edc:  numBytes = 4926; return jucer_PIPAudioProcessorTemplate_h;
         case 0xf4ca9e9a:  numBytes = 2447; return jucer_PIPMain_cpp;
         case 0x0b16e320:  numBytes = 517; return jucer_PIPTemplate_h;
-        case 0xcd472557:  numBytes = 6426; return jucer_UnityPluginGUIScript_cs;
+        case 0xcd472557:  numBytes = 6433; return jucer_UnityPluginGUIScript_cs;
         case 0x763d39dc:  numBytes = 1050; return colourscheme_dark_xml;
         case 0xe8b08520:  numBytes = 1050; return colourscheme_light_xml;
         case 0x938e96ec:  numBytes = 20; return nothingtoseehere_txt;

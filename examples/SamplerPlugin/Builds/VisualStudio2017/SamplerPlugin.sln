@@ -1,0 +1,38 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2017
+
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SamplerPlugin - Standalone Plugin", "SamplerPlugin_StandalonePlugin.vcxproj", "{D360F9B3-8C13-D2B2-251C-B02625CC4C23}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C41DA356-3CB0-E032-A394-F4A34787364B} = {C41DA356-3CB0-E032-A394-F4A34787364B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SamplerPlugin - VST3", "SamplerPlugin_VST3.vcxproj", "{B3FA6D65-F1C3-D81E-0033-44C34F788881}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C41DA356-3CB0-E032-A394-F4A34787364B} = {C41DA356-3CB0-E032-A394-F4A34787364B}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SamplerPlugin - Shared Code", "SamplerPlugin_SharedCode.vcxproj", "{C41DA356-3CB0-E032-A394-F4A34787364B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B3FA6D65-F1C3-D81E-0033-44C34F788881}.Debug|x64.ActiveCfg = Debug|x64
+		{B3FA6D65-F1C3-D81E-0033-44C34F788881}.Debug|x64.Build.0 = Debug|x64
+		{B3FA6D65-F1C3-D81E-0033-44C34F788881}.Release|x64.ActiveCfg = Release|x64
+		{B3FA6D65-F1C3-D81E-0033-44C34F788881}.Release|x64.Build.0 = Release|x64
+		{D360F9B3-8C13-D2B2-251C-B02625CC4C23}.Debug|x64.ActiveCfg = Debug|x64
+		{D360F9B3-8C13-D2B2-251C-B02625CC4C23}.Debug|x64.Build.0 = Debug|x64
+		{D360F9B3-8C13-D2B2-251C-B02625CC4C23}.Release|x64.ActiveCfg = Release|x64
+		{D360F9B3-8C13-D2B2-251C-B02625CC4C23}.Release|x64.Build.0 = Release|x64
+		{C41DA356-3CB0-E032-A394-F4A34787364B}.Debug|x64.ActiveCfg = Debug|x64
+		{C41DA356-3CB0-E032-A394-F4A34787364B}.Debug|x64.Build.0 = Debug|x64
+		{C41DA356-3CB0-E032-A394-F4A34787364B}.Release|x64.ActiveCfg = Release|x64
+		{C41DA356-3CB0-E032-A394-F4A34787364B}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -42,7 +42,7 @@ class Project  : public FileBasedDocument,
 public:
     //==============================================================================
     Project (const File&);
-    ~Project();
+    ~Project() override;
 
     //==============================================================================
     // FileBasedDocument stuff..
@@ -98,14 +98,17 @@ public:
     String getProjectFilenameRootString()                { return File::createLegalFileName (getDocumentTitle()); }
     String getProjectUIDString() const                   { return projectUIDValue.get(); }
 
+    String getProjectLineFeed() const                    { return projectLineFeedValue.get(); }
+
     String getVersionString() const                      { return versionValue.get(); }
     String getVersionAsHex() const;
     int getVersionAsHexInteger() const;
     void setProjectVersion (const String& newVersion)    { versionValue = newVersion; }
 
     String getBundleIdentifierString() const             { return bundleIdentifierValue.get(); }
-    String getDefaultBundleIdentifierString()            { return "com.yourcompany." + CodeHelpers::makeValidIdentifier (getProjectNameString(), false, true, false); }
-    String getDefaultAAXIdentifierString()               { return getDefaultBundleIdentifierString(); }
+    String getDefaultBundleIdentifierString() const;
+    String getDefaultAAXIdentifierString() const         { return getDefaultBundleIdentifierString(); }
+    String getDefaultPluginManufacturerString() const;
 
     String getCompanyNameString() const                  { return companyNameValue.get(); }
     String getCompanyCopyrightString() const             { return companyCopyrightValue.get(); }
@@ -126,6 +129,10 @@ public:
 
     String getCppStandardString() const                  { return cppStandardValue.get(); }
 
+    StringArray getCompilerFlagSchemes() const;
+    void addCompilerFlagScheme (const String&);
+    void removeCompilerFlagScheme (const String&);
+
     //==============================================================================
     String getPluginNameString() const                { return pluginNameValue.get(); }
     String getPluginDescriptionString() const         { return pluginDescriptionValue.get();}
@@ -135,7 +142,8 @@ public:
     String getPluginChannelConfigsString() const      { return pluginChannelConfigsValue.get(); }
     String getAAXIdentifierString() const             { return pluginAAXIdentifierValue.get(); }
     String getPluginAUExportPrefixString() const      { return pluginAUExportPrefixValue.get(); }
-    String getPluginAUMainTypeString() const          { return pluginAUMainTypeValue.get(); }
+    String getVSTNumMIDIInputsString() const          { return pluginVSTNumMidiInputsValue.get(); }
+    String getVSTNumMIDIOutputsString() const         { return pluginVSTNumMidiOutputsValue.get(); }
 
     //==============================================================================
     static bool checkMultiChoiceVar (const ValueWithDefault& valueToCheck, Identifier idToCheck) noexcept
@@ -277,6 +285,12 @@ public:
 
         bool isModuleCode() const;
 
+        Value getCompilerFlagSchemeValue();
+        String getCompilerFlagSchemeString() const;
+
+        void setCompilerFlagScheme (const String&);
+        void clearCurrentCompilerFlagScheme();
+
         //==============================================================================
         bool canContain (const Item& child) const;
         int getNumChildren() const                      { return state.getNumChildren(); }
@@ -408,13 +422,15 @@ public:
 private:
     ValueTree projectRoot  { Ids::JUCERPROJECT };
 
-    ValueWithDefault projectNameValue, projectUIDValue, projectTypeValue, versionValue, bundleIdentifierValue, companyNameValue, companyCopyrightValue,
-                     companyWebsiteValue, companyEmailValue, displaySplashScreenValue, reportAppUsageValue, splashScreenColourValue, cppStandardValue,
-                     headerSearchPathsValue, preprocessorDefsValue, userNotesValue, maxBinaryFileSizeValue, includeBinaryDataInJuceHeaderValue, binaryDataNamespaceValue;
+    ValueWithDefault projectNameValue, projectUIDValue, projectLineFeedValue, projectTypeValue, versionValue, bundleIdentifierValue, companyNameValue,
+                     companyCopyrightValue, companyWebsiteValue, companyEmailValue, displaySplashScreenValue, reportAppUsageValue, splashScreenColourValue, cppStandardValue,
+                     headerSearchPathsValue, preprocessorDefsValue, userNotesValue, maxBinaryFileSizeValue, includeBinaryDataInJuceHeaderValue, binaryDataNamespaceValue,
+                     compilerFlagSchemesValue;
 
     ValueWithDefault pluginFormatsValue, pluginNameValue, pluginDescriptionValue, pluginManufacturerValue, pluginManufacturerCodeValue,
                      pluginCodeValue, pluginChannelConfigsValue, pluginCharacteristicsValue, pluginAUExportPrefixValue, pluginAAXIdentifierValue,
-                     pluginAUMainTypeValue, pluginAUSandboxSafeValue, pluginRTASCategoryValue, pluginVSTCategoryValue, pluginVST3CategoryValue, pluginAAXCategoryValue;
+                     pluginAUMainTypeValue, pluginAUSandboxSafeValue, pluginRTASCategoryValue, pluginVSTCategoryValue, pluginVST3CategoryValue, pluginAAXCategoryValue,
+                     pluginVSTNumMidiInputsValue, pluginVSTNumMidiOutputsValue;
 
     //==============================================================================
     std::unique_ptr<CompileEngineSettings> compileEngineSettings;
@@ -462,7 +478,8 @@ private:
     void createAudioPluginPropertyEditors (PropertyListBuilder& props);
 
     //==============================================================================
-    void updateTitle();
+    void updateTitleDependencies();
+    void updateCompanyNameDependencies();
     void updateProjectSettings();
     ValueTree getConfigurations() const;
     ValueTree getConfigNode();

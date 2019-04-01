@@ -20,6 +20,8 @@
   ==============================================================================
 */
 
+#define JUCE_DUMP_LITTLEFOOT_HEAP_STATUS 0
+
 namespace littlefoot
 {
 
@@ -264,7 +266,7 @@ private:
 
     void dumpStatus()
     {
-       #if DUMP_LITTLEFOOT_HEAP_STATUS
+       #if JUCE_DUMP_LITTLEFOOT_HEAP_STATUS
         int differences = 0;
         constexpr int diffLen = 50;
         char areas[diffLen + 1] = { 0 };
@@ -283,7 +285,7 @@ private:
 
         double proportionOK = ((int) blockSize - differences) / (double) blockSize;
 
-        juce::ignoreUnused (proportionOK);
+        ignoreUnused (proportionOK);
 
         DBG ("Heap: " << areas << "  " << String (roundToInt (100 * proportionOK)) << "%  "
                << (isProgramLoaded() ? "Ready" : "Loading"));

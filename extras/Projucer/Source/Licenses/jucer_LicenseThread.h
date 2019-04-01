@@ -33,9 +33,9 @@ struct NetWorkerThread   : public Thread,
 {
     NetWorkerThread()  : Thread ("License") {}
 
-    ~NetWorkerThread()
+    ~NetWorkerThread() override
     {
-        jassert (MessageManager::getInstance()->isThisTheMessageThread());
+        JUCE_ASSERT_MESSAGE_MANAGER_IS_LOCKED
 
         signalThreadShouldExit();
         cancelPendingUpdate();

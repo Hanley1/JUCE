@@ -40,7 +40,7 @@ class JUCE_API  FocusChangeListener
 {
 public:
     /** Destructor. */
-    virtual ~FocusChangeListener()  {}
+    virtual ~FocusChangeListener() = default;
 
     /** Callback to indicate that the currently focused component has changed. */
     virtual void globalFocusChanged (Component* focusedComponent) = 0;
@@ -357,6 +357,7 @@ private:
     friend class MouseInputSourceInternal;
     friend class DeletedAtShutdown;
     friend class TopLevelWindowManager;
+    friend class Displays;
 
     std::unique_ptr<MouseInputSource::SourceList> mouseSources;
 
@@ -407,7 +408,7 @@ private:
     static double getDefaultMasterScale();
 
     Desktop();
-    ~Desktop();
+    ~Desktop() override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Desktop)
 };

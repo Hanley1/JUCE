@@ -4,13 +4,15 @@
 <plist>
   <dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>This app requires requires audio input. If you do not have an audio interface connected it will use the built-in microphone.</string>
+    <string>This app requires audio input. If you do not have an audio interface connected it will use the built-in microphone.</string>
     <key>NSCameraUsageDescription</key>
-    <string>This app requires access to the camera function correctly.</string>
+    <string>This app requires access to the camera to function correctly.</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
     <key>CFBundleExecutable</key>
     <string>${EXECUTABLE_NAME}</string>
     <key>CFBundleIdentifier</key>
@@ -24,9 +26,9 @@
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleShortVersionString</key>
-    <string>5.3.2</string>
+    <string>5.4.3</string>
     <key>CFBundleVersion</key>
-    <string>5.3.2</string>
+    <string>5.4.3</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright (c) 2018 - ROLI Ltd.</string>
     <key>NSHighResolutionCapable</key>

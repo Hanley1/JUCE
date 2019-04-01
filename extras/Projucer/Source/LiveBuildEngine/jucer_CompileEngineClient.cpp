@@ -106,10 +106,18 @@ public:
         server = createClangServer (command);
        #endif
 
-        if (connectToPipe (pipeName, 10000))
-            MessageTypes::sendPing (*this);
-        else
-            jassertfalse;
+        for (int i = 0; i < 20; ++i)
+        {
+            if (connectToPipe (pipeName, 10000))
+            {
+                MessageTypes::sendPing (*this);
+                break;
+            }
+
+            Thread::sleep (50);
+        }
+
+        jassert (isConnected());
 
         startTimer (serverKeepAliveTimeout);
     }
@@ -202,7 +210,7 @@ public:
         openedOk = true;
     }
 
-    ~ChildProcess()
+    ~ChildProcess() override
     {
         projectRoot.removeListener (this);
 
@@ -422,7 +430,7 @@ private:
     {
         auto liveModules = project.getProjectRoot().getChildWithName (Ids::MODULES);
 
-        std::unique_ptr<XmlElement> xml (XmlDocument::parse (project.getFile()));
+        auto xml = parseXML (project.getFile());
 
         if (xml == nullptr || ! xml->hasTagName (Ids::JUCERPROJECT.toString()))
             return false;
@@ -462,7 +470,7 @@ private:
                        && (project.isConfigFlagEnabled ("JUCE_PLUGINHOST_VST3")
                              || project.isConfigFlagEnabled ("JUCE_PLUGINHOST_VST"));
 
-        auto customVst3Path = getAppSettings().getStoredPath (Ids::vst3Path).toString();
+        auto customVst3Path = getAppSettings().getStoredPath (Ids::vst3Path, TargetOS::getThisOS()).get().toString();
 
         if (customVst3Path.isNotEmpty() && (project.getProjectType().isAudioPlugin() || isVSTHost))
             paths.add (customVst3Path);
@@ -634,7 +642,7 @@ struct CompileEngineChildProcess::Editor  : private CodeDocument::Listener,
         document.addListener (this);
     }
 
-    ~Editor()
+    ~Editor() override
     {
         document.removeListener (this);
     }
