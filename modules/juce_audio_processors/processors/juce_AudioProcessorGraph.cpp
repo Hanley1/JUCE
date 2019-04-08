@@ -702,7 +702,7 @@ struct RenderSequenceBuilder
     static int getFreeBuffer (Array<AssignedBuffer>& buffers)
     {
         for (int i = 1; i < buffers.size(); ++i)
-            if (buffers.getReference(i).isFree())
+            if (buffers.getReference (i).isFree())
                 return i;
 
         buffers.add (AssignedBuffer::createFree());
@@ -1246,7 +1246,7 @@ void AudioProcessorGraph::prepareToPlay (double sampleRate, int estimatedSamples
     setRateAndBufferSizeDetails (sampleRate, estimatedSamplesPerBlock);
     clearRenderingSequence();
 
-    if (isNonRealtime() && MessageManager::getInstance()->isThisTheMessageThread())
+    if (MessageManager::getInstance()->isThisTheMessageThread())
         handleAsyncUpdate();
     else
         triggerAsyncUpdate();
@@ -1376,7 +1376,7 @@ void AudioProcessorGraph::AudioGraphIOProcessor::fillInPluginDescription (Plugin
     d.uid = d.name.hashCode();
     d.category = "I/O devices";
     d.pluginFormatName = "Internal";
-    d.manufacturerName = "ROLI Ltd.";
+    d.manufacturerName = "JUCE";
     d.version = "1.0";
     d.isInstrument = false;
 

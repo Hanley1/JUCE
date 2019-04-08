@@ -97,7 +97,8 @@ public:
           iosAppGroupsIDValue                          (settings, Ids::iosAppGroupsId,                          getUndoManager()),
           keepCustomXcodeSchemesValue                  (settings, Ids::keepCustomXcodeSchemes,                  getUndoManager()),
           useHeaderMapValue                            (settings, Ids::useHeaderMap,                            getUndoManager()),
-          customLaunchStoryboardValue                  (settings, Ids::customLaunchStoryboard,                  getUndoManager())
+          customLaunchStoryboardValue                  (settings, Ids::customLaunchStoryboard,                  getUndoManager()),
+          exporterBundleIdentifierValue                (settings, Ids::bundleIdentifier,                        getUndoManager())
     {
         name = iOS ? getNameiOS() : getNameMac();
 
@@ -137,6 +138,7 @@ public:
     String getCustomResourceFoldersString() const      { return customXcodeResourceFoldersValue.get().toString().replaceCharacters ("\r\n", "::"); }
     String getCustomXcassetsFolderString() const       { return customXcassetsFolderValue.get(); }
     String getCustomLaunchStoryboardString() const     { return customLaunchStoryboardValue.get(); }
+    bool shouldAddStoryboardToProject() const          { return getCustomLaunchStoryboardString().isNotEmpty() || getCustomXcassetsFolderString().isEmpty(); }
 
     bool isHardenedRuntimeEnabled() const              { return hardenedRuntimeValue.get(); }
     Array<var> getHardenedRuntimeOptions() const       { return *hardenedRuntimeOptionsValue.get().getArray(); }
@@ -156,6 +158,10 @@ public:
     bool isFileSharingEnabled() const                  { return uiFileSharingEnabledValue.get(); }
     bool isDocumentBrowserEnabled() const              { return uiSupportsDocumentBrowserValue.get(); }
     bool isStatusBarHidden() const                     { return uiStatusBarHiddenValue.get(); }
+
+    String getDocumentExtensionsString() const         { return documentExtensionsValue.get(); }
+
+    bool shouldKeepCustomXcodeSchemes() const          { return keepCustomXcodeSchemesValue.get(); }
 
     String getIosDevelopmentTeamIDString() const       { return iosDevelopmentTeamIDValue.get(); }
     String getAppGroupIdString() const                 { return iosAppGroupsIDValue.get(); }
@@ -217,9 +223,9 @@ public:
                        "a launch storyboard from being used.");
 
             props.add (new TextPropertyComponent (customLaunchStoryboardValue, "Custom Launch Storyboard", 256, false),
-                       "If this field is not empty then the specified launch storyboard will be used for the app's launch screen, "
-                       "otherwise a default blank launch storyboard will be generated. This should be the filename without the "
-                       "\".storyboard\" extension and the file should be added to the project's Xcode resources.");
+                       "If this field is not empty then the specified launch storyboard file will be added to the project as an Xcode "
+                       "resource and will be used for the app's launch screen, otherwise a default blank launch storyboard will be used. "
+                       "The file path should be relative to the project folder.");
         }
 
         props.add (new TextPropertyComponent (customXcodeResourceFoldersValue, "Custom Xcode Resource Folders", 8192, true),
@@ -329,7 +335,8 @@ public:
         if (iOS)
         {
             props.add (new ChoicePropertyComponent (iosBackgroundAudioValue, "Audio Background Capability"),
-                       "Enable this to grant your app the capability to access audio when in background mode.");
+                       "Enable this to grant your app the capability to access audio when in background mode. "
+                       "This permission is required if your app creates a MIDI input or output device.");
 
             props.add (new ChoicePropertyComponent (iosBackgroundBleValue, "Bluetooth MIDI Background Capability"),
                        "Enable this to grant your app the capability to connect to Bluetooth LE devices when in background mode.");
@@ -385,6 +392,10 @@ public:
 
         props.add (new TextPropertyComponent (postbuildCommandValue, "Post-Build Shell Script", 32768, true),
                    "Some shell-script that will be run after a build completes.");
+
+        props.add (new TextPropertyComponent (exporterBundleIdentifierValue, "Exporter Bundle Identifier", 256, false),
+                   "Use this to override the project bundle identifier for this exporter. "
+                   "This is useful if you want to use different bundle identifiers for Mac and iOS exporters in the same project.");
 
         props.add (new TextPropertyComponent (iosDevelopmentTeamIDValue, "Development Team ID", 10, false),
                    "The Development Team ID to be used for setting up code-signing your iOS app. This is a ten-character "
@@ -588,7 +599,7 @@ protected:
                            "The type of OSX binary that will be produced.");
             }
 
-            props.add (new TextPropertyComponent (customXcodeFlags, "Custom Xcode Flags", 8192, false),
+            props.add (new TextPropertyComponent (customXcodeFlags, "Custom Xcode Flags", 8192, true),
                        "A comma-separated list of custom Xcode setting flags which will be appended to the list of generated flags, "
                        "e.g. MACOSX_DEPLOYMENT_TARGET_i386 = 10.5, VALID_ARCHS = \"ppc i386 x86_64\"");
 
@@ -1080,7 +1091,9 @@ public:
 
         String getBundleIdentifier() const
         {
-            auto bundleIdentifier = owner.project.getBundleIdentifierString();
+            auto exporterBundleIdentifier = owner.exporterBundleIdentifierValue.get().toString();
+            auto bundleIdentifier = exporterBundleIdentifier.isNotEmpty() ? exporterBundleIdentifier
+                                                                          : owner.project.getBundleIdentifierString();
 
             if (xcodeBundleIDSubPath.isNotEmpty())
             {
@@ -1438,11 +1451,12 @@ public:
                 if (type != AudioUnitv3PlugIn)
                     addPlistDictionaryKeyBool (dict, "UIViewControllerBasedStatusBarAppearance", false);
 
-                if (owner.getCustomXcassetsFolderString().isEmpty())
+                if (owner.shouldAddStoryboardToProject())
                 {
                     auto customStoryboard = owner.getCustomLaunchStoryboardString();
 
-                    addPlistDictionaryKey (dict, "UILaunchStoryboardName", customStoryboard.isNotEmpty() ? customStoryboard
+                    addPlistDictionaryKey (dict, "UILaunchStoryboardName", customStoryboard.isNotEmpty() ? customStoryboard.fromLastOccurrenceOf ("/", false, false)
+                                                                                                                           .upToLastOccurrenceOf (".storyboard", false, false)
                                                                                                          : owner.getDefaultLaunchStoryboardName());
                 }
             }
@@ -1464,8 +1478,8 @@ public:
             addPlistDictionaryKey (dict, "NSHumanReadableCopyright",    owner.project.getCompanyCopyrightString());
             addPlistDictionaryKeyBool (dict, "NSHighResolutionCapable", true);
 
-            auto documentExtensions = StringArray::fromTokens (replacePreprocessorDefs (owner.getAllPreprocessorDefs(), owner.settings ["documentExtensions"]),
-                                                               ",", {});
+            auto documentExtensions = StringArray::fromTokens (replacePreprocessorDefs (owner.getAllPreprocessorDefs(),
+                                                                                        owner.getDocumentExtensionsString()), ",", {});
             documentExtensions.trim();
             documentExtensions.removeEmptyStrings (true);
 
@@ -1874,7 +1888,8 @@ private:
                      microphonePermissionNeededValue, microphonePermissionsTextValue, cameraPermissionNeededValue, cameraPermissionTextValue,
                      uiFileSharingEnabledValue, uiSupportsDocumentBrowserValue, uiStatusBarHiddenValue, documentExtensionsValue, iosInAppPurchasesValue,
                      iosBackgroundAudioValue, iosBackgroundBleValue, iosPushNotificationsValue, iosAppGroupsValue, iCloudPermissionsValue,
-                     iosDevelopmentTeamIDValue, iosAppGroupsIDValue, keepCustomXcodeSchemesValue, useHeaderMapValue, customLaunchStoryboardValue;
+                     iosDevelopmentTeamIDValue, iosAppGroupsIDValue, keepCustomXcodeSchemesValue, useHeaderMapValue, customLaunchStoryboardValue,
+                     exporterBundleIdentifierValue;
 
     static String sanitisePath (const String& path)
     {
@@ -1911,8 +1926,17 @@ private:
         {
             addXcassets();
 
-            if (getCustomXcassetsFolderString().isEmpty() && getCustomLaunchStoryboardString().isEmpty())
-                writeDefaultLaunchStoryboardFile();
+            if (shouldAddStoryboardToProject())
+            {
+                auto customLaunchStoryboard = getCustomLaunchStoryboardString();
+
+                if (customLaunchStoryboard.isEmpty())
+                    writeDefaultLaunchStoryboardFile();
+                else if (getProject().getProjectFolder().getChildFile (customLaunchStoryboard).existsAsFile())
+                    addLaunchStoryboardFileReference (RelativePath (customLaunchStoryboard, RelativePath::projectFolder)
+                                                          .rebased (getProject().getProjectFolder(), getTargetFolder(), RelativePath::buildTargetFolder)
+                                                          .toUnixStyle());
+            }
         }
         else
         {
@@ -3254,7 +3278,7 @@ private:
     //==============================================================================
     void removeMismatchedXcuserdata() const
     {
-        if (settings ["keepCustomXcodeSchemes"])
+        if (shouldKeepCustomXcodeSchemes())
             return;
 
         auto xcuserdata = getProjectBundle().getChildFile ("xcuserdata");
@@ -3265,6 +3289,7 @@ private:
         if (! xcuserdataMatchesTargets (xcuserdata))
         {
             xcuserdata.deleteRecursively();
+            getProjectBundle().getChildFile ("xcshareddata").getChildFile ("xcschemes").deleteRecursively();
             getProjectBundle().getChildFile ("project.xcworkspace").deleteRecursively();
         }
     }
@@ -3388,7 +3413,7 @@ private:
     {
         String attributes;
 
-        attributes << "{ LastUpgradeCheck = 0930; "
+        attributes << "{ LastUpgradeCheck = 1010; "
                    << "ORGANIZATIONNAME = " << getProject().getCompanyNameString().quoted()
                    <<"; ";
 
@@ -3515,9 +3540,13 @@ private:
 
         overwriteFileIfDifferentOrThrow (storyboardFile, mo);
 
-        auto path   = RelativePath (storyboardFile, getTargetFolder(), RelativePath::buildTargetFolder).toUnixStyle();
-        auto refID  = addFileReference (path);
-        auto fileID = addBuildFile (path, refID, false, false);
+        addLaunchStoryboardFileReference (RelativePath (storyboardFile, getTargetFolder(), RelativePath::buildTargetFolder).toUnixStyle());
+    }
+
+    void addLaunchStoryboardFileReference (const String& relativePath) const
+    {
+        auto refID  = addFileReference (relativePath);
+        auto fileID = addBuildFile (relativePath, refID, false, false);
 
         resourceIDs.add (fileID);
         resourceFileRefs.add (refID);

@@ -262,8 +262,8 @@ public:
                                                                   const String& labelText,
                                                                   NormalisableRange<float> valueRange,
                                                                   float defaultValue,
-                                                                  std::function<String (float)> valueToTextFunction,
-                                                                  std::function<float (const String&)> textToValueFunction,
+                                                                  std::function<String(float)> valueToTextFunction,
+                                                                  std::function<float(const String&)> textToValueFunction,
                                                                   bool isMetaParameter = false,
                                                                   bool isAutomatableParameter = true,
                                                                   bool isDiscrete = false,
@@ -516,7 +516,7 @@ private:
         @endcode
     */
     JUCE_DEPRECATED (std::unique_ptr<RangedAudioParameter> createParameter (const String&, const String&, const String&, NormalisableRange<float>,
-                                                                            float, std::function<String (float)>, std::function<float (const String&)>,
+                                                                            float, std::function<String(float)>, std::function<float(const String&)>,
                                                                             bool, bool, bool, AudioProcessorParameter::Category, bool));
 
     //==============================================================================
@@ -535,15 +535,17 @@ private:
 
     void valueTreePropertyChanged (ValueTree&, const Identifier&) override;
     void valueTreeChildAdded (ValueTree&, ValueTree&) override;
-    void valueTreeChildRemoved (ValueTree&, ValueTree&, int) override;
-    void valueTreeChildOrderChanged (ValueTree&, int, int) override;
-    void valueTreeParentChanged (ValueTree&) override;
     void valueTreeRedirected (ValueTree&) override;
     void updateParameterConnectionsToChildTrees();
 
     const Identifier valueType { "PARAM" }, valuePropertyID { "value" }, idPropertyID { "id" };
 
-    std::map<String, std::unique_ptr<ParameterAdapter>> adapterTable;
+    struct StringRefLessThan final
+    {
+        bool operator() (StringRef a, StringRef b) const noexcept { return a.text.compare (b.text) < 0; }
+    };
+
+    std::map<StringRef, std::unique_ptr<ParameterAdapter>, StringRefLessThan> adapterTable;
 
     CriticalSection valueTreeChanging;
 
