@@ -520,7 +520,8 @@ String AudioDeviceManager::setAudioDeviceSetup (const AudioDeviceSetup& newSetup
 
     if (! currentSetup.useDefaultInputChannels)    numInputChansNeeded  = currentSetup.inputChannels.countNumberOfSetBits();
     if (! currentSetup.useDefaultOutputChannels)   numOutputChansNeeded = currentSetup.outputChannels.countNumberOfSetBits();
-
+    
+    auto* type = getCurrentDeviceTypeObject();
     currentSetup.inputDeviceUID = type->getDeviceUID(currentSetup.inputDeviceName, true);
     currentSetup.outputDeviceUID = type->getDeviceUID(currentSetup.outputDeviceName, false);
 
