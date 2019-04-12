@@ -2801,7 +2801,7 @@ private:
 
         if (isUp)
         {
-            handleMouseEvent (MouseInputSource::InputSourceType::touch, { -10.0f, -10.0f }, ModifierKeys::currentModifiers.withoutMouseButtons(),
+            handleMouseEvent (MouseInputSource::InputSourceType::touch, MouseInputSource::offscreenMousePos, ModifierKeys::currentModifiers.withoutMouseButtons(),
                               pressure, orientation, time, {}, touchIndex);
 
             if (! isValidPeer (this))
@@ -2914,7 +2914,7 @@ private:
 
         if (isUp)
         {
-            handleMouseEvent (MouseInputSource::InputSourceType::pen, { -10.0f, -10.0f }, ModifierKeys::currentModifiers,
+            handleMouseEvent (MouseInputSource::InputSourceType::pen, MouseInputSource::offscreenMousePos, ModifierKeys::currentModifiers,
                               pressure, MouseInputSource::invalidOrientation, time, penDetails);
 
             if (! isValidPeer (this))
@@ -3368,7 +3368,7 @@ private:
         forceDisplayUpdate();
 
         if (fullScreen && ! isMinimised())
-            setWindowPos (hwnd, Desktop::getInstance().getDisplays().findDisplayForRect (component.getScreenBounds()).userArea,
+            setWindowPos (hwnd, ScalingHelpers::scaledScreenPosToUnscaled (component, Desktop::getInstance().getDisplays().findDisplayForRect (component.getScreenBounds()).userArea),
                           SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOSENDCHANGING);
     }
 

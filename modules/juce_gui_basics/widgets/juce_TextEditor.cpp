@@ -1253,7 +1253,7 @@ void TextEditor::timerCallbackInt()
 
 void TextEditor::checkFocus()
 {
-    if (hasKeyboardFocus (false) && ! isCurrentlyBlockedByAnotherModalComponent())
+    if (! wasFocused && hasKeyboardFocus (false) && ! isCurrentlyBlockedByAnotherModalComponent())
     {
         wasFocused = true;
 
