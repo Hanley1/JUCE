@@ -95,7 +95,7 @@ public:
         withParameter() method, then the string will have these appended on the
         end and url-encoded.
     */
-    String getSubPath (bool includeGetParamters = false) const;
+    String getSubPath (bool includeGetParameters = false) const;
 
     /** If any parameters are set, returns these URL encoded, including the "?"
      *  prefix.
@@ -487,7 +487,7 @@ public:
 
         @see readEntireBinaryStream, readEntireTextStream
     */
-    XmlElement* readEntireXmlStream (bool usePostCommand = false) const;
+    std::unique_ptr<XmlElement> readEntireXmlStream (bool usePostCommand = false) const;
 
     //==============================================================================
     /** Adds escape sequences to a string to encode any characters that aren't

@@ -146,10 +146,9 @@ Result PIPGenerator::createJucerFile()
 
     auto outputFile = outputDirectory.getChildFile (metadata[Ids::name].toString() + ".jucer");
 
-    std::unique_ptr<XmlElement> xml (root.createXml());
-
-    if (xml->writeToFile (outputFile, {}))
-        return Result::ok();
+    if (auto xml = root.createXml())
+        if (xml->writeTo (outputFile, {}))
+            return Result::ok();
 
     return Result::fail ("Failed to create .jucer file in " + outputDirectory.getFullPathName());
 }
@@ -236,7 +235,7 @@ ValueTree PIPGenerator::createModulePathChild (const String& moduleID)
 
 ValueTree PIPGenerator::createBuildConfigChild (bool isDebug)
 {
-    ValueTree child (Ids::CONFIGURATIONS);
+    ValueTree child (Ids::CONFIGURATION);
 
     child.setProperty (Ids::name, isDebug ? "Debug" : "Release", nullptr);
     child.setProperty (Ids::isDebug, isDebug ? 1 : 0, nullptr);

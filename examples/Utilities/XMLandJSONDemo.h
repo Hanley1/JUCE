@@ -278,7 +278,7 @@ public:
         setSize (500, 500);
     }
 
-    ~XMLandJSONDemo()
+    ~XMLandJSONDemo() override
     {
         resultsTree.setRootItem (nullptr);
     }
@@ -314,7 +314,7 @@ private:
         std::unique_ptr<XmlElement> openness;
 
         if (rootItem.get() != nullptr)
-            openness.reset (rootItem->getOpennessState());
+            openness = rootItem->getOpennessState();
 
         createNewRootNode();
 
@@ -351,7 +351,7 @@ private:
         parsedXml.reset();
 
         XmlDocument doc (codeDocument.getAllContent());
-        parsedXml.reset (doc.getDocumentElement());
+        parsedXml = doc.getDocumentElement();
 
         if (parsedXml.get() == nullptr)
         {

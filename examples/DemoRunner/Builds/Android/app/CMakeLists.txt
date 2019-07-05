@@ -8,7 +8,7 @@ SET(BINARY_NAME "juce_jni")
 add_library("cpufeatures" STATIC "${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c")
 set_source_files_properties("${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c" PROPERTIES COMPILE_FLAGS "-Wno-sign-conversion -Wno-gnu-statement-expression")
 
-add_definitions("-DJUCE_ANDROID=1" "-DJUCE_ANDROID_API_VERSION=23" "-DJUCE_PUSH_NOTIFICATIONS=1" "-DJUCE_ANDROID_GL_ES_VERSION_3_0=1" "-DJUCE_DEMO_RUNNER=1" "-DJUCE_UNIT_TESTS=1" "-DJUCER_ANDROIDSTUDIO_7F0E4A25=1" "-DJUCE_APP_VERSION=5.4.3" "-DJUCE_APP_VERSION_HEX=0x50403")
+add_definitions("-DJUCE_ANDROID=1" "-DJUCE_ANDROID_API_VERSION=23" "-DJUCE_PUSH_NOTIFICATIONS=1" "-DJUCE_PUSH_NOTIFICATIONS_ACTIVITY=\"com/roli/juce/JuceActivity\"" "-DJUCE_ANDROID_GL_ES_VERSION_3_0=1" "-DJUCE_DEMO_RUNNER=1" "-DJUCE_UNIT_TESTS=1" "-DJUCER_ANDROIDSTUDIO_7F0E4A25=1" "-DJUCE_APP_VERSION=5.4.3" "-DJUCE_APP_VERSION_HEX=0x50403")
 
 include_directories( AFTER
     "../../../JuceLibraryCode"
@@ -1135,6 +1135,7 @@ add_library( ${BINARY_NAME}
     "../../../../../modules/juce_graphics/image_formats/pnglib/png.c"
     "../../../../../modules/juce_graphics/image_formats/pnglib/png.h"
     "../../../../../modules/juce_graphics/image_formats/pnglib/pngconf.h"
+    "../../../../../modules/juce_graphics/image_formats/pnglib/pngdebug.h"
     "../../../../../modules/juce_graphics/image_formats/pnglib/pngerror.c"
     "../../../../../modules/juce_graphics/image_formats/pnglib/pngget.c"
     "../../../../../modules/juce_graphics/image_formats/pnglib/pnginfo.h"
@@ -2733,6 +2734,7 @@ set_source_files_properties("../../../../../modules/juce_graphics/image_formats/
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/png.c" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/png.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/pngconf.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/pngdebug.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/pngerror.c" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/pngget.c" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_graphics/image_formats/pnglib/pnginfo.h" PROPERTIES HEADER_FILE_ONLY TRUE)

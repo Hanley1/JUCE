@@ -62,8 +62,8 @@ struct FallbackDownloadTask  : public URL::DownloadTask,
             if (listener != nullptr)
                 listener->progress (this, downloaded, contentLength);
 
-            auto max = jmin ((int) bufferSize, contentLength < 0 ? std::numeric_limits<int>::max()
-                                                                 : static_cast<int> (contentLength - downloaded));
+            auto max = (int) jmin ((int64) bufferSize, contentLength < 0 ? std::numeric_limits<int64>::max()
+                                                                         : static_cast<int64> (contentLength - downloaded));
 
             auto actual = stream->read (buffer.get(), max);
 
@@ -766,7 +766,7 @@ OutputStream* URL::createOutputStream() const
 bool URL::readEntireBinaryStream (MemoryBlock& destData, bool usePostCommand) const
 {
     const std::unique_ptr<InputStream> in (isLocalFile() ? getLocalFile().createInputStream()
-                                                         : static_cast<InputStream*> (createInputStream (usePostCommand)));
+                                                         : createInputStream (usePostCommand));
 
     if (in != nullptr)
     {
@@ -780,7 +780,7 @@ bool URL::readEntireBinaryStream (MemoryBlock& destData, bool usePostCommand) co
 String URL::readEntireTextStream (bool usePostCommand) const
 {
     const std::unique_ptr<InputStream> in (isLocalFile() ? getLocalFile().createInputStream()
-                                                         : static_cast<InputStream*> (createInputStream (usePostCommand)));
+                                                         : createInputStream (usePostCommand));
 
     if (in != nullptr)
         return in->readEntireStreamAsString();
@@ -788,23 +788,23 @@ String URL::readEntireTextStream (bool usePostCommand) const
     return {};
 }
 
-XmlElement* URL::readEntireXmlStream (bool usePostCommand) const
+std::unique_ptr<XmlElement> URL::readEntireXmlStream (bool usePostCommand) const
 {
-    return XmlDocument::parse (readEntireTextStream (usePostCommand));
+    return parseXML (readEntireTextStream (usePostCommand));
 }
 
 //==============================================================================
 URL URL::withParameter (const String& parameterName,
                         const String& parameterValue) const
 {
-    URL u (*this);
+    auto u = *this;
     u.addParameter (parameterName, parameterValue);
     return u;
 }
 
 URL URL::withParameters (const StringPairArray& parametersToAdd) const
 {
-    URL u (*this);
+    auto u = *this;
 
     for (int i = 0; i < parametersToAdd.size(); ++i)
         u.addParameter (parametersToAdd.getAllKeys()[i],
@@ -820,7 +820,7 @@ URL URL::withPOSTData (const String& newPostData) const
 
 URL URL::withPOSTData (const MemoryBlock& newPostData) const
 {
-    URL u (*this);
+    auto u = *this;
     u.postData = newPostData;
     return u;
 }
@@ -834,7 +834,7 @@ URL::Upload::Upload (const String& param, const String& name,
 
 URL URL::withUpload (Upload* const f) const
 {
-    URL u (*this);
+    auto u = *this;
 
     for (int i = u.filesToUpload.size(); --i >= 0;)
         if (u.filesToUpload.getObjectPointerUnchecked(i)->parameterName == f->parameterName)

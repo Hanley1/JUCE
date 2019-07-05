@@ -32,24 +32,24 @@ AudioProcessorValueTreeState::Parameter::Parameter (const String& parameterID,
                                                     const String& parameterName,
                                                     const String& labelText,
                                                     NormalisableRange<float> valueRange,
-                                                    float defaultValue,
+                                                    float defaultParameterValue,
                                                     std::function<String(float)> valueToTextFunction,
                                                     std::function<float(const String&)> textToValueFunction,
                                                     bool isMetaParameter,
                                                     bool isAutomatableParameter,
                                                     bool isDiscrete,
-                                                    AudioProcessorParameter::Category category,
+                                                    AudioProcessorParameter::Category parameterCategory,
                                                     bool isBoolean)
     : AudioParameterFloat (parameterID,
                            parameterName,
                            valueRange,
-                           defaultValue,
+                           defaultParameterValue,
                            labelText,
-                           category,
+                           parameterCategory,
                            valueToTextFunction == nullptr ? std::function<String(float v, int)>()
                                                           : [valueToTextFunction](float v, int) { return valueToTextFunction (v); },
                            std::move (textToValueFunction)),
-      unsnappedDefault (valueRange.convertTo0to1 (defaultValue)),
+      unsnappedDefault (valueRange.convertTo0to1 (defaultParameterValue)),
       metaParameter (isMetaParameter),
       automatable (isAutomatableParameter),
       discrete (isDiscrete),
@@ -276,6 +276,9 @@ RangedAudioParameter* AudioProcessorValueTreeState::createAndAddParameter (const
 
 RangedAudioParameter* AudioProcessorValueTreeState::createAndAddParameter (std::unique_ptr<RangedAudioParameter> param)
 {
+    if (param == nullptr)
+        return nullptr;
+
     // All parameters must be created before giving this manager a ValueTree state!
     jassert (! state.isValid());
 
@@ -854,6 +857,7 @@ private:
         void prepareToPlay (double, int) override {}
         void releaseResources() override {}
         void processBlock (AudioBuffer<float>&, MidiBuffer&) override {}
+        using AudioProcessor::processBlock;
         double getTailLengthSeconds() const override { return {}; }
         bool acceptsMidi() const override { return {}; }
         bool producesMidi() const override { return {}; }

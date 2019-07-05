@@ -309,7 +309,7 @@ private:
 
        #if JUCE_USE_STUDIO_ONE_COMPATIBLE_PARAMETERS
         // studio one doesn't like negative parameters
-        paramHash &= ~(1 << (sizeof (Vst::ParamID) * 8 - 1));
+        paramHash &= ~(((Vst::ParamID) 1) << (sizeof (Vst::ParamID) * 8 - 1));
        #endif
 
         return paramHash;
@@ -319,7 +319,6 @@ private:
     //==============================================================================
     Atomic<int> refCount;
     std::unique_ptr<AudioProcessor> audioProcessor;
-    ScopedJuceInitialiser_GUI libraryInitialiser;
 
     //==============================================================================
     LegacyAudioParametersWrapper juceParameters;
@@ -455,7 +454,7 @@ public:
             valueNormalized = info.defaultNormalizedValue;
         }
 
-        virtual ~Param() {}
+        virtual ~Param() override = default;
 
         bool setNormalized (Vst::ParamValue v) override
         {
@@ -538,7 +537,7 @@ public:
             info.flags = Vst::ParameterInfo::kIsProgramChange | Vst::ParameterInfo::kCanAutomate;
         }
 
-        virtual ~ProgramChangeParameter() {}
+        virtual ~ProgramChangeParameter() override = default;
 
         bool setNormalized (Vst::ParamValue v) override
         {
@@ -559,7 +558,7 @@ public:
 
         void toString (Vst::ParamValue value, Vst::String128 result) const override
         {
-            toString128 (result, owner.getProgramName (static_cast<int> (value * info.stepCount)));
+            toString128 (result, owner.getProgramName (roundToInt (value * info.stepCount)));
         }
 
         bool fromString (const Vst::TChar* text, Vst::ParamValue& outValueNormalized) const override
@@ -919,7 +918,6 @@ private:
 
     //==============================================================================
     ComSmartPtr<JuceAudioProcessor> audioProcessor;
-    ScopedJuceInitialiser_GUI libraryInitialiser;
 
     struct MidiController
     {
@@ -960,7 +958,7 @@ private:
                 {
                     auto vstParamID = audioProcessor->getVSTParamIDForIndex (i);
                     auto* juceParam = audioProcessor->getParamForVSTParamID (vstParamID);
-                    auto* parameterGroup = pluginInstance->parameterTree.getGroupsForParameter (juceParam).getLast();
+                    auto* parameterGroup = pluginInstance->getParameterTree().getGroupsForParameter (juceParam).getLast();
                     auto unitID = JuceAudioProcessor::getUnitID (parameterGroup);
 
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,
@@ -993,7 +991,7 @@ private:
                 parameterToMidiController[p].ctrlNumber = i;
 
                 parameters.addParameter (new Vst::Parameter (toString ("MIDI CC " + String (c) + "|" + String (i)),
-                                         static_cast<Vst::ParamID> (p) + parameterToMidiControllerOffset, 0, 0, 0,
+                                         static_cast<Vst::ParamID> (p) + parameterToMidiControllerOffset, nullptr, 0, 0,
                                          0, Vst::kRootUnitId));
             }
         }
@@ -1269,8 +1267,9 @@ private:
         tresult PLUGIN_API setContentScaleFactor (Steinberg::IPlugViewContentScaleSupport::ScaleFactor factor) override
         {
            #if ! JUCE_MAC
-            // Cubase 10 doesn't support non-integer scale factors...
-            if (getHostType().type == PluginHostType::SteinbergCubase10)
+            auto hostType = getHostType().type;
+
+            if (hostType == PluginHostType::SteinbergCubase10 || hostType == PluginHostType::FruityLoops)
             {
                 if (component.get() != nullptr)
                     if (auto* peer = component->getPeer())
@@ -1343,7 +1342,7 @@ private:
                 ignoreUnused (fakeMouseGenerator);
             }
 
-            ~ContentWrapperComponent()
+            ~ContentWrapperComponent() override
             {
                 if (pluginEditor != nullptr)
                 {
@@ -1497,8 +1496,9 @@ private:
 
             void handleAsyncUpdate() override
             {
-                if (auto* peer = owner.component->getPeer())
-                    peer->updateBounds();
+                if (owner.component != nullptr)
+                    if (auto* peer = owner.component->getPeer())
+                        peer->updateBounds();
             }
 
             JuceVST3Editor& owner;
@@ -1512,8 +1512,6 @@ private:
        #if JUCE_WINDOWS
         WindowsHooks hooks;
        #endif
-
-        ScopedJuceInitialiser_GUI libraryInitialiser;
 
         //==============================================================================
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JuceVST3Editor)
@@ -1575,7 +1573,7 @@ public:
         pluginInstance->setPlayHead (this);
     }
 
-    ~JuceVST3Component()
+    ~JuceVST3Component() override
     {
         if (juceVST3EditController != nullptr)
             juceVST3EditController->vst3IsPlaying = 0;
@@ -2730,6 +2728,8 @@ private:
     }
 
     //==============================================================================
+    ScopedJuceInitialiser_GUI libraryInitialiser;
+
     Atomic<int> refCount { 1 };
 
     AudioProcessor* pluginInstance;
@@ -2764,7 +2764,6 @@ private:
     bool isMidiOutputBusEnabled = false;
    #endif
 
-    ScopedJuceInitialiser_GUI libraryInitialiser;
     static const char* kJucePrivateDataIdentifier;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JuceVST3Component)
@@ -2925,8 +2924,10 @@ struct JucePluginFactory  : public IPluginFactory3
             return false;
         }
 
-        auto* entry = classes.add (new ClassEntry (info, createFunction));
+        auto entry = std::make_unique<ClassEntry> (info, createFunction);
         entry->infoW.fromAscii (info);
+
+        classes.push_back (std::move (entry));
 
         return true;
     }
@@ -2975,7 +2976,7 @@ struct JucePluginFactory  : public IPluginFactory3
     {
         if (info != nullptr)
         {
-            if (auto* entry = classes[(int) index])
+            if (auto& entry = classes[(size_t) index])
             {
                 memcpy (info, &entry->infoW, sizeof (PClassInfoW));
                 return kResultOk;
@@ -2987,6 +2988,8 @@ struct JucePluginFactory  : public IPluginFactory3
 
     tresult PLUGIN_API createInstance (FIDString cid, FIDString sourceIid, void** obj) override
     {
+        ScopedJuceInitialiser_GUI libraryInitialiser;
+
         *obj = nullptr;
 
         TUID tuid;
@@ -3008,7 +3011,7 @@ struct JucePluginFactory  : public IPluginFactory3
         TUID iidToQuery;
         sourceFuid.toTUID (iidToQuery);
 
-        for (auto* entry : classes)
+        for (auto& entry : classes)
         {
             if (doUIDsMatch (entry->infoW.cid, cid))
             {
@@ -3044,7 +3047,6 @@ struct JucePluginFactory  : public IPluginFactory3
 
 private:
     //==============================================================================
-    ScopedJuceInitialiser_GUI libraryInitialiser;
     Atomic<int> refCount { 1 };
     const PFactoryInfo factoryInfo;
     ComSmartPtr<Vst::IHostApplication> host;
@@ -3063,10 +3065,10 @@ private:
         bool isUnicode = false;
 
     private:
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ClassEntry)
+        JUCE_DECLARE_NON_COPYABLE (ClassEntry)
     };
 
-    OwnedArray<ClassEntry> classes;
+    std::vector<std::unique_ptr<ClassEntry>> classes;
 
     //==============================================================================
     template<class PClassInfoType>
@@ -3076,7 +3078,7 @@ private:
         {
             zerostruct (*info);
 
-            if (auto* entry = classes[(int) index])
+            if (auto& entry = classes[(size_t) index])
             {
                 if (entry->isUnicode)
                     return kResultFalse;
@@ -3091,7 +3093,9 @@ private:
     }
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JucePluginFactory)
+    // no leak detector here to prevent it firing on shutdown when running in hosts that
+    // don't release the factory object correctly...
+    JUCE_DECLARE_NON_COPYABLE (JucePluginFactory)
 };
 
 } // juce namespace
