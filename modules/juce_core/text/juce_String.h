@@ -1373,7 +1373,7 @@ public:
         use it indirectly during a static constructor, leading to hard-to-find order-of-initialisation
         problems.
         @deprecated If you need an empty String object, just use String() or {}.
-        The only time you might miss having String::empty available might be if you need to return an
+        The only time you might miss having String() available might be if you need to return an
         empty string from a function by reference, but if you need to do that, it's easy enough to use
         a function-local static String object and return that, avoiding any order-of-initialisation issues.
     */
