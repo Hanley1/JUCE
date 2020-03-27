@@ -656,6 +656,14 @@ static const unsigned char temp_binary_data_0[] =
 
 const char* juce_icon_png = (const char*) temp_binary_data_0;
 
+//================== ic_save.png ==================
+static const unsigned char temp_binary_data_1[] =
+{ 137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,24,0,0,0,24,8,4,0,0,0,74,126,245,115,0,0,0,110,73,68,65,84,120,1,213,203,77,10,194,48,0,132,209,239,2,249,185,152,160,199,8,9,228,10,30,215,122,1,235,42,226,102,64,104,201,64,55,117,102,55,204,227,188,
+185,177,48,118,122,103,35,186,187,228,59,111,69,196,7,34,54,80,15,2,163,255,4,94,20,2,145,202,234,129,162,181,121,32,104,77,30,136,90,179,7,170,214,238,129,149,70,34,211,121,239,131,39,99,210,7,63,185,178,76,238,23,206,154,15,131,245,244,49,253,92,170,
+48,0,0,0,0,73,69,78,68,174,66,96,130,0,0 };
+
+const char* ic_save_png = (const char*) temp_binary_data_1;
+
 
 const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
 {
@@ -668,6 +676,7 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
     switch (hash)
     {
         case 0x154a7275:  numBytes = 45854; return juce_icon_png;
+        case 0x1414ddec:  numBytes = 167; return ic_save_png;
         default: break;
     }
 
@@ -677,12 +686,14 @@ const char* getNamedResource (const char* resourceNameUTF8, int& numBytes)
 
 const char* namedResourceList[] =
 {
-    "juce_icon_png"
+    "juce_icon_png",
+    "ic_save_png"
 };
 
 const char* originalFilenames[] =
 {
-    "juce_icon.png"
+    "juce_icon.png",
+    "ic_save.png"
 };
 
 const char* getNamedResourceOriginalFilename (const char* resourceNameUTF8)

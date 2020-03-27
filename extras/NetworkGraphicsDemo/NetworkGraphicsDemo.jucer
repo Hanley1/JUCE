@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="gWI5Ir" name="NetworkGraphicsDemo" projectType="guiapp" bundleIdentifier="com.juce.NetworkGraphicsDemo"
-              jucerVersion="5.4.3" displaySplashScreen="0" reportAppUsage="0"
+              jucerVersion="5.4.1" displaySplashScreen="0" reportAppUsage="0"
               companyName="ROLI Ltd." companyCopyright="ROLI Ltd.">
   <MAINGROUP id="OT9rJ2" name="NetworkGraphicsDemo">
     <GROUP id="{48D54E6E-37F4-B20A-E038-C63E4EDFD4D9}" name="Source">
@@ -14,6 +14,8 @@
       <FILE id="F7A4kl" name="SharedCanvas.h" compile="0" resource="0" file="Source/SharedCanvas.h"/>
     </GROUP>
     <FILE id="Ww6bQw" name="juce_icon.png" compile="0" resource="1" file="Source/juce_icon.png"/>
+    <FILE id="FbtD9v" name="ic_save.png" compile="1" resource="1" file="../../../../Documents/ic_save.png"
+          xcodeResource="1"/>
   </MAINGROUP>
   <EXPORTFORMATS>
     <XCODE_MAC targetFolder="Builds/MacOSX" bigIcon="Ww6bQw">
