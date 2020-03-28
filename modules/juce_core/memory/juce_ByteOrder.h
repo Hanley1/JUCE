@@ -20,6 +20,11 @@
   ==============================================================================
 */
 
+// 11.4 fixes added PCH 3/27/20
+#if JUCE_MAC || JUCE_IOS
+ #include <libkern/OSByteOrder.h>
+#endif
+
 namespace juce
 {
 
