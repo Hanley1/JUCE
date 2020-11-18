@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -77,8 +77,6 @@ public:
         timerCallback();
         startTimer (500);
     }
-
-    ~SurroundEditor() {}
 
     void resized() override
     {
@@ -222,8 +220,6 @@ public:
                                           .withOutput ("Output", AudioChannelSet::stereo()))
     {}
 
-    ~SurroundProcessor() {}
-
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override
     {
@@ -273,6 +269,8 @@ public:
                 channelBuffer[i] += std::sin (MathConstants<float>::twoPi * freq * static_cast<float> (sampleOffset++));
         }
     }
+
+    using AudioProcessor::processBlock;
 
     //==============================================================================
     AudioProcessorEditor* createEditor() override { return new SurroundEditor (*this); }

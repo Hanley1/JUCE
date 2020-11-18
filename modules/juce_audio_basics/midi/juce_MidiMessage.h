@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -401,7 +401,7 @@ public:
     /** Returns true if the message is an aftertouch event.
 
         For aftertouch events, use the getNoteNumber() method to find out the key
-        that it applies to, and getAftertouchValue() to find out the amount. Use
+        that it applies to, and getAfterTouchValue() to find out the amount. Use
         getChannel() to find out the channel.
 
         @see getAftertouchValue, getNoteNumber

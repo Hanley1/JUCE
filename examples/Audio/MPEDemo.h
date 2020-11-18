@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -47,7 +47,6 @@
 *******************************************************************************/
 
 #pragma once
-
 
 //==============================================================================
 class ZoneColourPicker
@@ -210,7 +209,7 @@ public:
         auto noteDistance = float (getWidth()) / 128;
         for (auto i = 0; i < 128; ++i)
         {
-            auto x = noteDistance * i;
+            auto x = noteDistance * (float) i;
             auto noteHeight = int (MidiMessage::isMidiNoteBlack (i) ? 0.7 * getHeight() : getHeight());
 
             g.setColour (MidiMessage::isMidiNoteBlack (i) ? Colours::white : Colours::grey);
@@ -263,7 +262,7 @@ public:
 
 private:
     //==============================================================================
-    MPENote* findActiveNote (int noteID) const noexcept
+    const MPENote* findActiveNote (int noteID) const noexcept
     {
         for (auto& note : activeNotes)
             if (note.noteID == noteID)
@@ -303,8 +302,8 @@ private:
     Point<float> getCentrePositionForNote (MPENote note) const
     {
         auto n = float (note.initialNote) + float (note.totalPitchbendInSemitones);
-        auto x = getWidth() * n / 128;
-        auto y = getHeight() * (1 - note.timbre.asUnsignedFloat());
+        auto x = (float) getWidth() * n / 128;
+        auto y = (float) getHeight() * (1 - note.timbre.asUnsignedFloat());
 
         return { x, y };
     }
@@ -657,8 +656,8 @@ private:
 
             auto xPos = zone.isLowerZone() ? 0 : zone.getLastMemberChannel() - 1;
 
-            Rectangle<int> zoneRect { int (channelWidth * (xPos)), 20,
-                                      int (channelWidth * (zone.numMemberChannels + 1)), getHeight() - 20 };
+            Rectangle<int> zoneRect { int (channelWidth * (float) xPos), 20,
+                                      int (channelWidth * (float) (zone.numMemberChannels + 1)), getHeight() - 20 };
 
             g.setColour (zoneColour);
             g.drawRect (zoneRect, 3);
@@ -681,8 +680,8 @@ private:
         auto numChannels  = legacyModeChannelRange.getEnd() - startChannel - 1;
 
 
-        Rectangle<int> zoneRect (int (getChannelRectangleWidth() * startChannel), 0,
-                                 int (getChannelRectangleWidth() * numChannels), getHeight());
+        Rectangle<int> zoneRect (int (getChannelRectangleWidth() * (float) startChannel), 0,
+                                 int (getChannelRectangleWidth() * (float) numChannels), getHeight());
 
         zoneRect.removeFromTop (20);
 
@@ -695,7 +694,7 @@ private:
     //==============================================================================
     float getChannelRectangleWidth() const noexcept
     {
-        return float (getWidth()) / numMidiChannels;
+        return (float) getWidth() / (float) numMidiChannels;
     }
 
     //==============================================================================
@@ -828,6 +827,8 @@ public:
         }
     }
 
+    using MPESynthesiserVoice::renderNextBlock;
+
 private:
     //==============================================================================
     float getNextSample() noexcept
@@ -876,10 +877,10 @@ public:
           visualiserComp (colourPicker)
     {
        #ifndef JUCE_DEMO_RUNNER
-        audioDeviceManager.initialise (0, 2, 0, true, {}, 0);
+        audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
        #endif
 
-        audioDeviceManager.addMidiInputCallback ({}, this);
+        audioDeviceManager.addMidiInputDeviceCallback ({}, this);
         audioDeviceManager.addAudioCallback (this);
 
         addAndMakeVisible (audioSetupComp);
@@ -902,9 +903,9 @@ public:
         setSize (880, 720);
     }
 
-    ~MPEDemo()
+    ~MPEDemo() override
     {
-        audioDeviceManager.removeMidiInputCallback ({}, this);
+        audioDeviceManager.removeMidiInputDeviceCallback ({}, this);
         audioDeviceManager.removeAudioCallback (this);
     }
 

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -65,7 +65,7 @@ struct MidiDeviceListEntry : ReferenceCountedObject
 //==============================================================================
 class MidiDemo  : public Component,
                   private Timer,
-                  private MidiKeyboardStateListener,
+                  private MidiKeyboardState::Listener,
                   private MidiInputCallback,
                   private AsyncUpdater
 {
@@ -116,7 +116,7 @@ public:
         startTimer (500);
     }
 
-    ~MidiDemo()
+    ~MidiDemo() override
     {
         stopTimer();
         midiInputs .clear();
@@ -187,7 +187,7 @@ public:
         if (isInput)
         {
             jassert (midiInputs[index]->inDevice.get() == nullptr);
-            midiInputs[index]->inDevice.reset (MidiInput::openDevice (midiInputs[index]->deviceInfo.identifier, this));
+            midiInputs[index]->inDevice = MidiInput::openDevice (midiInputs[index]->deviceInfo.identifier, this);
 
             if (midiInputs[index]->inDevice.get() == nullptr)
             {
@@ -200,7 +200,7 @@ public:
         else
         {
             jassert (midiOutputs[index]->outDevice.get() == nullptr);
-            midiOutputs[index]->outDevice.reset (MidiOutput::openDevice (midiOutputs[index]->deviceInfo.identifier));
+            midiOutputs[index]->outDevice = MidiOutput::openDevice (midiOutputs[index]->deviceInfo.identifier);
 
             if (midiOutputs[index]->outDevice.get() == nullptr)
             {
@@ -273,7 +273,7 @@ private:
 
 
             g.setColour (textColour);
-            g.setFont (height * 0.7f);
+            g.setFont ((float) height * 0.7f);
 
             if (isInput)
             {

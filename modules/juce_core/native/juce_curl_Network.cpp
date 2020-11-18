@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -567,7 +567,11 @@ public:
         size_t len = size * nmemb;
 
         String header (ptr, len);
-        responseHeaders += header;
+
+        if (! header.contains (":") && header.startsWithIgnoreCase ("HTTP/"))
+            responseHeaders.clear();
+        else
+            responseHeaders += header;
 
         return len;
     }
@@ -617,8 +621,7 @@ public:
     int64 contentLength = -1, streamPos = 0;
     MemoryBlock curlBuffer;
     MemoryBlock headersAndPostData;
-    String responseHeaders { "\r\n" }; // WebInputStream::parseHttpHeaders skips the first header line (assumes status)
-    String requestHeaders;
+    String responseHeaders, requestHeaders;
     int statusCode = -1;
 
     //==============================================================================
@@ -639,7 +642,7 @@ public:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
-URL::DownloadTask* URL::downloadToFile (const File& targetLocation, String extraHeaders, DownloadTask::Listener* listener, bool shouldUsePost)
+std::unique_ptr<URL::DownloadTask> URL::downloadToFile (const File& targetLocation, String extraHeaders, DownloadTask::Listener* listener, bool shouldUsePost)
 {
     return URL::DownloadTask::createFallbackDownloader (*this, targetLocation, extraHeaders, listener, shouldUsePost);
 }

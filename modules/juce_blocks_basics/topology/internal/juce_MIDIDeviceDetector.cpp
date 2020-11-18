@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -51,8 +51,8 @@ struct MIDIDeviceDetector  : public PhysicalTopologySource::DeviceDetector
                 lockedFromOutside = false;
 
                 dev->setLockAgainstOtherProcesses (lock);
-                dev->midiInput.reset (MidiInput::openDevice (pair.input.identifier, dev.get()));
-                dev->midiOutput.reset (MidiOutput::openDevice (pair.output.identifier));
+                dev->midiInput  = MidiInput::openDevice  (pair.input.identifier, dev.get());
+                dev->midiOutput = MidiOutput::openDevice (pair.output.identifier);
 
                 if (dev->midiInput != nullptr)
                 {
@@ -149,8 +149,8 @@ private:
     bool lockedFromOutside = true;
 
     /** For backwards compatibility, the block interprocess lock has to use the midi input name.
-        The below is necceccary because blocks of the same type might duplicate a port name, so
-        must share an interporcess lock.
+        The below is necessary because blocks of the same type might duplicate a port name, so
+        must share an interprocess lock.
      */
     std::shared_ptr<InterProcessLock> createMidiPortLock (const String& midiInName, const String& midiOutName)
     {

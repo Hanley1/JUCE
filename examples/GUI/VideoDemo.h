@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -186,7 +186,7 @@ public:
         setSize (500, 500);
     }
 
-    ~VideoDemo()
+    ~VideoDemo() override
     {
         fileTree.removeListener (this);
     }
@@ -363,7 +363,7 @@ public:
         setPortraitOrientationEnabled (true);
     }
 
-    ~VideoDemo()
+    ~VideoDemo() override
     {
         curVideoComp->onPlaybackStarted = nullptr;
         curVideoComp->onPlaybackStopped = nullptr;

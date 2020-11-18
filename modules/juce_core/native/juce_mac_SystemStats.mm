@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -81,9 +81,13 @@ void CPUInformation::initialise() noexcept
     has3DNow = (b & (1u << 31)) != 0;
     hasSSE3  = (c & (1u <<  0)) != 0;
     hasSSSE3 = (c & (1u <<  9)) != 0;
+    hasFMA3  = (c & (1u << 12)) != 0;
     hasSSE41 = (c & (1u << 19)) != 0;
     hasSSE42 = (c & (1u << 20)) != 0;
     hasAVX   = (c & (1u << 28)) != 0;
+
+    SystemStatsHelpers::doCPUID (a, b, c, d, 0x80000001);
+    hasFMA4  = (c & (1u << 16)) != 0;
 
     SystemStatsHelpers::doCPUID (a, b, c, d, 7);
     hasAVX2            = (b & (1u <<  5)) != 0;
@@ -133,11 +137,17 @@ SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
     StringArray parts;
     parts.addTokens (getOSXVersion(), ".", StringRef());
 
-    jassert (parts[0].getIntValue() == 10);
-    const int major = parts[1].getIntValue();
-    jassert (major > 2);
+    const auto major = parts[0].getIntValue();
+    const auto minor = parts[1].getIntValue();
 
-    return (OperatingSystemType) (major + MacOSX_10_4 - 4);
+    if (major == 10)
+    {
+        jassert (minor > 2);
+        return (OperatingSystemType) (minor + MacOSX_10_7 - 7);
+    }
+
+    jassert (major == 11 && minor == 0);
+    return MacOSX_11_0;
    #endif
 }
 
@@ -195,10 +205,8 @@ bool SystemStats::isOperatingSystem64Bit()
 {
    #if JUCE_IOS
     return false;
-   #elif JUCE_64BIT
-    return true;
    #else
-    return getOperatingSystemType() >= MacOSX_10_6;
+    return true;
    #endif
 }
 

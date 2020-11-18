@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -49,7 +49,7 @@ MPEChannelAssigner::MPEChannelAssigner (Range<int> channelRange)
 
 int MPEChannelAssigner::findMidiChannelForNewNote (int noteNumber) noexcept
 {
-    if (numChannels == 1)
+    if (numChannels <= 1)
         return firstChannel;
 
     for (auto ch = firstChannel; (isLegacy || zone->isLowerZone() ? ch <= lastChannel : ch >= lastChannel); ch += channelIncrement)
@@ -84,15 +84,29 @@ int MPEChannelAssigner::findMidiChannelForNewNote (int noteNumber) noexcept
     return midiChannelLastAssigned;
 }
 
-void MPEChannelAssigner::noteOff (int noteNumber)
+void MPEChannelAssigner::noteOff (int noteNumber, int midiChannel)
 {
+    const auto removeNote = [] (MidiChannel& ch, int noteNum)
+    {
+        if (ch.notes.removeAllInstancesOf (noteNum) > 0)
+        {
+            ch.lastNotePlayed = noteNum;
+            return true;
+        }
+
+        return false;
+    };
+
+    if (midiChannel >= 0 && midiChannel < 17)
+    {
+        removeNote (midiChannels[midiChannel], noteNumber);
+        return;
+    }
+
     for (auto& ch : midiChannels)
     {
-        if (ch.notes.removeAllInstancesOf (noteNumber) > 0)
-        {
-            ch.lastNotePlayed = noteNumber;
+        if (removeNote (ch, noteNumber))
             return;
-        }
     }
 }
 

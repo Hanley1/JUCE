@@ -2,17 +2,16 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 5 End-User License
-   Agreement and JUCE 5 Privacy Policy (both updated and effective as of the
-   27th April 2017).
+   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
+   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
 
-   End User License Agreement: www.juce.com/juce-5-licence
-   Privacy Policy: www.juce.com/juce-5-privacy-policy
+   End User License Agreement: www.juce.com/juce-6-licence
+   Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
    www.gnu.org/licenses).
@@ -40,7 +39,7 @@ void Displays::init (Desktop& desktop)
 const Displays::Display& Displays::findDisplayForRect (Rectangle<int> rect, bool isPhysical) const noexcept
 {
     int maxArea = -1;
-    Display* retVal = nullptr;
+    const Display* retVal = nullptr;
 
     for (auto& display : displays)
     {
@@ -65,7 +64,7 @@ const Displays::Display& Displays::findDisplayForRect (Rectangle<int> rect, bool
 const Displays::Display& Displays::findDisplayForPoint (Point<int> point, bool isPhysical) const noexcept
 {
     auto minDistance = std::numeric_limits<int>::max();
-    Display* retVal = nullptr;
+    const Display* retVal = nullptr;
 
     for (auto& display : displays)
     {
@@ -198,7 +197,7 @@ bool operator!= (const Displays::Display& d1, const Displays::Display& d2) noexc
 const Displays::Display& Displays::getDisplayContaining (Point<int> position) const noexcept
 {
     JUCE_ASSERT_MESSAGE_MANAGER_IS_LOCKED
-    auto* best = &displays.getReference (0);
+    const auto* best = &displays.getReference (0);
     auto bestDistance = std::numeric_limits<int>::max();
 
     for (auto& d : displays)
@@ -249,7 +248,7 @@ struct DisplayNode
 };
 
 /** Recursive - will calculate and set the logicalArea member of current. */
-static void processDisplay (DisplayNode* currentNode, const Array<DisplayNode>& allNodes)
+static void processDisplay (DisplayNode* currentNode, Array<DisplayNode>& allNodes)
 {
     const auto physicalArea = currentNode->display->totalArea.toDouble();
     const auto scale = currentNode->display->scale;

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -198,9 +198,9 @@ private:
     //==============================================================================
     struct NamedPipeThread   : public Thread
     {
-        NamedPipeThread (const String& threadName, const String& pName,
+        NamedPipeThread (const String& tName, const String& pName,
                          bool shouldCreatePipe, WaitableEvent& completed)
-            : Thread (threadName), pipeName (pName), workCompleted (completed)
+            : Thread (tName), pipeName (pName), workCompleted (completed)
         {
             if (shouldCreatePipe)
                 pipe.createNewPipe (pipeName);

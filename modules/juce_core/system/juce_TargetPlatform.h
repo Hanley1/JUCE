@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -58,7 +58,6 @@
 
 //==============================================================================
 #if defined (_WIN32) || defined (_WIN64)
-  #define       JUCE_WIN32 1
   #define       JUCE_WINDOWS 1
 #elif defined (JUCE_ANDROID)
   #undef        JUCE_ANDROID
@@ -68,11 +67,9 @@
 #elif defined (LINUX) || defined (__linux__)
   #define     JUCE_LINUX 1
 #elif defined (__APPLE_CPP__) || defined (__APPLE_CC__)
-// 11.4 fixes added PCH 3/27/20
-  //#include <CoreFoundation/CoreFoundation.h> // (needed to find out what platform we're using)
+  #define CF_EXCLUDE_CSTD_HEADERS 1
   #include <TargetConditionals.h> // (needed to find out what platform we're using)
   #include <AvailabilityMacros.h>
-
   #include "../native/juce_mac_ClangBugWorkaround.h"
 
   #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -186,7 +183,7 @@
 //==============================================================================
 // Compiler type macros.
 
-#ifdef __clang__
+#if defined (__clang__)
   #define JUCE_CLANG 1
 
 #elif defined (__GNUC__)

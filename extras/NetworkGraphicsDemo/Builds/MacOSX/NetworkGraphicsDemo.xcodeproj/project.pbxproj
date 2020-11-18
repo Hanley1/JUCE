@@ -69,10 +69,6 @@
 			isa = PBXBuildFile;
 			fileRef = 77C0AC21C1028911123844FC;
 		};
-		144F951FD37B79FBDFF5790A = {
-			isa = PBXBuildFile;
-			fileRef = 20057A6695F4F49E4D5D88DD;
-		};
 		9F618C008A503063D10076C4 = {
 			isa = PBXBuildFile;
 			fileRef = 74711D7544168CCAC4969A07;
@@ -140,13 +136,6 @@
 			path = "../../JuceLibraryCode/include_juce_core.mm";
 			sourceTree = "SOURCE_ROOT";
 		};
-		0555BAE6156EAF15CA77A2D8 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.c.h;
-			name = AppConfig.h;
-			path = ../../JuceLibraryCode/AppConfig.h;
-			sourceTree = "SOURCE_ROOT";
-		};
 		0ADF0DECFCB1DB4D3A847EB5 = {
 			isa = PBXFileReference;
 			lastKnownFileType = image.png;
@@ -166,13 +155,6 @@
 			lastKnownFileType = text.plist.xml;
 			name = "Info-App.plist";
 			path = "Info-App.plist";
-			sourceTree = "SOURCE_ROOT";
-		};
-		20057A6695F4F49E4D5D88DD = {
-			isa = PBXFileReference;
-			lastKnownFileType = image.png;
-			name = "ic_save.png";
-			path = "../../../../../../Documents/ic_save.png";
 			sourceTree = "SOURCE_ROOT";
 		};
 		25DEDA8C9F94A6C8DFC8E53E = {
@@ -563,7 +545,6 @@
 		C20D4DECE1291BF6AF8711DC = {
 			isa = PBXGroup;
 			children = (
-				0555BAE6156EAF15CA77A2D8,
 				74711D7544168CCAC4969A07,
 				92800676AF753D1A60108F11,
 				6D1F9E505D20C09647124F0A,
@@ -641,6 +622,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_LINK_OBJC_RUNTIME = NO;
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				COPY_PHASE_STRIP = NO;
@@ -660,6 +642,25 @@
 					"JucePlugin_Build_AAX=0",
 					"JucePlugin_Build_Standalone=0",
 					"JucePlugin_Build_Unity=0",
+					"JUCE_DISPLAY_SPLASH_SCREEN=0",
+					"JUCE_USE_DARK_SPLASH_SCREEN=1",
+					"JUCE_PROJUCER_VERSION=0x60004",
+					"JUCE_MODULE_AVAILABLE_juce_audio_basics=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_devices=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_formats=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_processors=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_utils=1",
+					"JUCE_MODULE_AVAILABLE_juce_core=1",
+					"JUCE_MODULE_AVAILABLE_juce_cryptography=1",
+					"JUCE_MODULE_AVAILABLE_juce_data_structures=1",
+					"JUCE_MODULE_AVAILABLE_juce_events=1",
+					"JUCE_MODULE_AVAILABLE_juce_graphics=1",
+					"JUCE_MODULE_AVAILABLE_juce_gui_basics=1",
+					"JUCE_MODULE_AVAILABLE_juce_gui_extra=1",
+					"JUCE_MODULE_AVAILABLE_juce_opengl=1",
+					"JUCE_MODULE_AVAILABLE_juce_osc=1",
+					"JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1",
+					"JUCE_STANDALONE_APPLICATION=1",
 				);
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
@@ -671,9 +672,14 @@
 				INFOPLIST_PREPROCESS = NO;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_HEADER_SEARCH_PATHS = (
+					"../../JuceLibraryCode",
+					"../../../../modules",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.juce.NetworkGraphicsDemo;
 				PRODUCT_NAME = "JUCE Network Graphics Demo";
 				USE_HEADERMAP = NO;
+				VALID_ARCHS = "i386 x86_64 arm64 arm64e";
 			};
 			name = Debug;
 		};
@@ -683,6 +689,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_LINK_OBJC_RUNTIME = NO;
+				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/build/$(CONFIGURATION)";
 				DEAD_CODE_STRIPPING = YES;
@@ -702,8 +709,26 @@
 					"JucePlugin_Build_AAX=0",
 					"JucePlugin_Build_Standalone=0",
 					"JucePlugin_Build_Unity=0",
+					"JUCE_DISPLAY_SPLASH_SCREEN=0",
+					"JUCE_USE_DARK_SPLASH_SCREEN=1",
+					"JUCE_PROJUCER_VERSION=0x60004",
+					"JUCE_MODULE_AVAILABLE_juce_audio_basics=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_devices=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_formats=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_processors=1",
+					"JUCE_MODULE_AVAILABLE_juce_audio_utils=1",
+					"JUCE_MODULE_AVAILABLE_juce_core=1",
+					"JUCE_MODULE_AVAILABLE_juce_cryptography=1",
+					"JUCE_MODULE_AVAILABLE_juce_data_structures=1",
+					"JUCE_MODULE_AVAILABLE_juce_events=1",
+					"JUCE_MODULE_AVAILABLE_juce_graphics=1",
+					"JUCE_MODULE_AVAILABLE_juce_gui_basics=1",
+					"JUCE_MODULE_AVAILABLE_juce_gui_extra=1",
+					"JUCE_MODULE_AVAILABLE_juce_opengl=1",
+					"JUCE_MODULE_AVAILABLE_juce_osc=1",
+					"JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1",
+					"JUCE_STANDALONE_APPLICATION=1",
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				HEADER_SEARCH_PATHS = (
 					"../../JuceLibraryCode",
@@ -715,9 +740,14 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_HEADER_SEARCH_PATHS = (
+					"../../JuceLibraryCode",
+					"../../../../modules",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.juce.NetworkGraphicsDemo;
 				PRODUCT_NAME = "JUCE Network Graphics Demo";
 				USE_HEADERMAP = NO;
+				VALID_ARCHS = "i386 x86_64 arm64 arm64e";
 			};
 			name = Release;
 		};
@@ -743,13 +773,15 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf";
+				CODE_SIGN_IDENTITY = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
@@ -762,7 +794,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "JUCE Network Graphics Demo";
-				WARNING_CFLAGS = -Wreorder;
+				SDKROOT = macosx;
+				WARNING_CFLAGS = "-Wreorder";
 				ZERO_LINK = NO;
 			};
 			name = Debug;
@@ -789,12 +822,15 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf";
+				CODE_SIGN_IDENTITY = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = NO;
 				GCC_C_LANGUAGE_STANDARD = c11;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_CHECK_SWITCH_STATEMENTS = YES;
@@ -806,14 +842,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				PRODUCT_NAME = "JUCE Network Graphics Demo";
-				WARNING_CFLAGS = -Wreorder;
+				SDKROOT = macosx;
+				WARNING_CFLAGS = "-Wreorder";
 				ZERO_LINK = NO;
 			};
 			name = Release;
-		};
-		80BE97CC38B01FABC0E73204 = {
-			isa = PBXTargetDependency;
-			target = 4311FBCBD02948A0ED96C7DD;
 		};
 		02715337C584F3C721251428 = {
 			isa = XCConfigurationList;
@@ -847,7 +880,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				987CBD5330E76B404F0D966C,
-				144F951FD37B79FBDFF5790A,
 				9F618C008A503063D10076C4,
 				BB9A9692D99DD0DDB1047B60,
 				6C2200C52B65E1BE80544E50,
@@ -903,13 +935,14 @@
 		A5398ADB6F5B128C00EB935C = {
 			isa = PBXProject;
 			buildConfigurationList = 02715337C584F3C721251428;
-			attributes = { LastUpgradeCheck = 0930; ORGANIZATIONNAME = "ROLI Ltd."; TargetAttributes = { 4311FBCBD02948A0ED96C7DD = { SystemCapabilities = {com.apple.ApplicationGroups.iOS = { enabled = 0; }; com.apple.InAppPurchase = { enabled = 0; }; com.apple.InterAppAudio = { enabled = 0; }; com.apple.Push = { enabled = 0; }; com.apple.Sandbox = { enabled = 0; }; }; }; }; };
+			attributes = { LastUpgradeCheck = 1200; ORGANIZATIONNAME = "Raw Material Software Limited"; TargetAttributes = { 4311FBCBD02948A0ED96C7DD = { SystemCapabilities = {com.apple.ApplicationGroups.iOS = { enabled = 0; }; com.apple.InAppPurchase = { enabled = 0; }; com.apple.InterAppAudio = { enabled = 0; }; com.apple.Push = { enabled = 0; }; com.apple.Sandbox = { enabled = 0; }; com.apple.HardenedRuntime = { enabled = 0; }; }; }; }; };
 			compatibilityVersion = "Xcode 3.2";
 			hasScannedForEncodings = 0;
 			mainGroup = D2EB65517396C974F0415A7F;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (4311FBCBD02948A0ED96C7DD);
+			knownRegions = (en, Base);
 		};
 	};
 	rootObject = A5398ADB6F5B128C00EB935C;

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -69,10 +69,8 @@ static MemoryBlock valueTreeToMemoryBlock (const ValueTree& v)
 
 static String valueTreeToString (const ValueTree& v)
 {
-    std::unique_ptr<XmlElement> xml (v.createXml());
-
-    if (xml.get() != nullptr)
-        return xml->createDocument ({}, true, false);
+    if (auto xml = v.createXml())
+        return xml->toString (XmlElement::TextFormat().singleLine().withoutHeader());
 
     return {};
 }
@@ -105,7 +103,7 @@ public:
         setSize (500, 500);
     }
 
-    ~ChildProcessDemo()
+    ~ChildProcessDemo() override
     {
         masterProcess.reset();
     }
