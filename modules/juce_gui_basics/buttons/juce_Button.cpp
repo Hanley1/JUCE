@@ -464,10 +464,10 @@ void Button::mouseUp (const MouseEvent& e)
 
     if (wasDown && wasOver && ! triggerOnMouseDown)
     {
-        if (lastStatePainted != buttonDown)
-            flashButtonState();
+//        if (lastStatePainted != buttonDown)       pch 1/4/2021 disabling to prevent additional buttonDown 
+//            flashButtonState();
 
-        internalClickCallback (e.mods);
+       internalClickCallback (e.mods);
     }
 }
 
