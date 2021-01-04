@@ -146,7 +146,7 @@ SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
         return (OperatingSystemType) (minor + MacOSX_10_7 - 7);
     }
 
-    jassert (major == 11 && minor == 0);
+    jassert (major == 11 && minor >= 0);  //pch was == 0, caused problems once at 11.1???
     return MacOSX_11_0;
    #endif
 }
