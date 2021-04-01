@@ -428,7 +428,7 @@ private:
 
     Array<int> mouseOverNotes, mouseDownNotes;
     BigInteger keysPressed, keysCurrentlyDrawnDown;
-    bool shouldCheckState = false;
+    bool shouldCheckState = false, shouldCheckMousePos = true;
 
     int rangeStart = 0, rangeEnd = 127;
     float firstKey = 12 * 4.0f;
