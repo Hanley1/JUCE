@@ -211,7 +211,9 @@ static inline MsgSendSuperFn getMsgSendSuperFn() noexcept   { return (MsgSendSup
 
 #if ! JUCE_IOS
 typedef double (*MsgSendFPRetFn) (id, SEL op, ...);
-static inline MsgSendFPRetFn getMsgSendFPRetFn() noexcept   { return (MsgSendFPRetFn) (void*) objc_msgSend_fpret; }
+static inline MsgSendFPRetFn getMsgSendFPRetFn() noexcept   {
+//    return (MsgSendFPRetFn) (void*) objc_msgSend_fpret;
+}
 #endif
 #endif
 

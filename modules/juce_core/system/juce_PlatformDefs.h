@@ -69,6 +69,8 @@ namespace juce
     #pragma intrinsic (__debugbreak)
   #endif
   #define JUCE_BREAK_IN_DEBUGGER        { __debugbreak(); }
+#elif JUCE_MAC && JUCE_CLANG && JUCE_ARM
+  #define JUCE_BREAK_IN_DEBUGGER        { __builtin_debugtrap(); }
 #elif JUCE_GCC || JUCE_MAC
   #if JUCE_NO_INLINE_ASM
    #define JUCE_BREAK_IN_DEBUGGER       { }
