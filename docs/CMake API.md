@@ -122,26 +122,15 @@ provisioning profiles, which is achieved by passing the `-allowProvisioningUpdat
 #### Archiving for iOS
 
 CMake's out-of-the-box archiving behaviour doesn't always work as expected, especially for targets
-that depend on static libraries (such as targets added with `juce_add_binary_data`). Xcode may
-generate these libraries into a 'DerivedData' directory, but then omit this directory from the
-library search paths later in the build.
+that depend on custom static libraries. Xcode may generate these libraries into a 'DerivedData'
+directory, but then omit this directory from the library search paths later in the build.
 
-If the "Product -> Archive" action isn't working, the following steps may help correct the issue:
+If the "Product -> Archive" action isn't working due to missing staticlibs, try setting the
+`ARCHIVE_OUTPUT_DIRECTORY` property explicitly:
 
-- On your static library, explicitly set the `ARCHIVE_OUTPUT_DIRECTORY` property.
-  ```
-  set_target_properties(my_static_lib_target PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "./")
-  ```
-- Now, the Archive build should complete without linker errors, but the archived product may still
-  be hidden in the Organizer window. To fix this issue, set the following properties on the target
-  representing the actual iOS app. If your target was added with `juce_add_gui_app`, pass the same
-  target name. Otherwise, if your target was added with `juce_add_plugin` you may need to append
-  `_Standalone` to the target name, to specify the standalone plugin target.
-  ```
-  set_target_properties(my_ios_app_target PROPERTIES
-      XCODE_ATTRIBUTE_INSTALL_PATH "$(LOCAL_APPS_DIR)"
-      XCODE_ATTRIBUTE_SKIP_INSTALL "NO")
-  ```
+    set_target_properties(my_static_lib_target PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "./")
+
+Note that the static library produced by `juce_add_binary_data` automatically sets this property.
 
 ### Building universal binaries for macOS
 
@@ -197,13 +186,11 @@ included JUCE in your own project.
 
 #### `JUCE_ENABLE_MODULE_SOURCE_GROUPS`
 
-This option controls whether dummy targets are added to the build, where these targets contain all
-of the source files for each module added with `juce_add_module(s)`. If you're planning to use an
-IDE and want to be able to browse all of JUCE's source files, this may be useful. However, it will
-increase the size of generated IDE projects and might slow down configuration a bit. If you enable
-this, you should probably also add `set_property(GLOBAL PROPERTY USE_FOLDERS YES)` to your top level
-CMakeLists, otherwise the module sources will be added directly to the top level of the project,
-instead of in a nice 'Modules' subfolder.
+This option will make module source files browsable in IDE projects. It has no effect in non-IDE
+projects. This option is off by default, as it will increase the size of generated IDE projects and
+might slow down configuration a bit. If you enable this, you should probably also add
+`set_property(GLOBAL PROPERTY USE_FOLDERS YES)` to your top level CMakeLists as this is required for
+source grouping to work.
 
 #### `JUCE_COPY_PLUGIN_AFTER_BUILD`
 
@@ -280,6 +267,9 @@ attributes directly to these creation functions, rather than adding them later.
 
 - `STATUS_BAR_HIDDEN`
   - May be either TRUE or FALSE. Adds the appropriate entries to an iOS app's Info.plist.
+  
+ - `REQUIRES_FULL_SCREEN`
+   - May be either TRUE or FALSE. Adds the appropriate entries to an iOS app's Info.plist.
 
 - `BACKGROUND_AUDIO_ENABLED`
   - May be either TRUE or FALSE. Adds the appropriate entries to an iOS app's Info.plist.
@@ -314,6 +304,12 @@ attributes directly to these creation functions, rather than adding them later.
   - A path to an xcassets directory, containing icons and/or launch images for this target. If this
     is specified, the ICON_BIG and ICON_SMALL arguments will not have an effect on iOS, and a launch
     storyboard will not be used.
+
+- `TARGETED_DEVICE_FAMILY`
+  - Specifies the device families on which the product must be capable of running. Allowed values
+    are "1", "2", and "1,2"; these correspond to "iPhone/iPod touch", "iPad", and "iPhone/iPod and
+    iPad" respectively. This will default to "1,2", meaning that the target will target iPhone,
+    iPod, and iPad.
 
 - `ICON_BIG`, `ICON_SMALL`
   - Paths to image files that will be used to generate app icons. If only one of these parameters
@@ -412,11 +408,13 @@ attributes directly to these creation functions, rather than adding them later.
 
 - `PLUGIN_MANUFACTURER_CODE`
   - A four-character unique ID for your company. For AU compatibility, this must contain at least
-    one upper-case letter.
+    one upper-case letter. GarageBand 10.3 requires the first letter to be upper-case, and the
+    remaining letters to be lower-case.
 
 - `PLUGIN_CODE`
-  - A four-character unique ID for your plugin. For AU compatibility, this must contain at least
-    one upper-case letter.
+  - A four-character unique ID for your plugin. For AU compatibility, this must contain exactly one
+    upper-case letter. GarageBand 10.3 requires the first letter to be upper-case, and the remaining
+    letters to be lower-case.
 
 - `DESCRIPTION`
   - A short description of your plugin.
@@ -480,8 +478,15 @@ attributes directly to these creation functions, rather than adding them later.
 - `AU_SANDBOX_SAFE`
   - May be either TRUE or FALSE. Adds the appropriate entries to an AU plugin's Info.plist.
 
+- `SUPPRESS_AU_PLIST_RESOURCE_USAGE`
+  - May be either TRUE or FALSE. Defaults to FALSE. Set this to TRUE to disable the `resourceUsage`
+    key in the target's plist. This is useful for AU plugins that must access resources which cannot
+    be declared in the resourceUsage block, such as UNIX domain sockets. In particular,
+    PACE-protected AU plugins may require this option to be enabled in order for the plugin to load
+    in GarageBand.
+
 - `AAX_CATEGORY`
-  - Should be one of: `AAX_ePlugInCategory_None`, `AAX_ePlugInCategory_EQ`,
+  - Should be one or more of: `AAX_ePlugInCategory_None`, `AAX_ePlugInCategory_EQ`,
     `AAX_ePlugInCategory_Dynamics`, `AAX_ePlugInCategory_PitchShift`, `AAX_ePlugInCategory_Reverb`,
     `AAX_ePlugInCategory_Delay`, `AAX_ePlugInCategory_Modulation`, `AAX_ePlugInCategory_Harmonic`,
     `AAX_ePlugInCategory_NoiseReduction`, `AAX_ePlugInCategory_Dither`,
@@ -646,21 +651,37 @@ CMake-supplied defaults.
 
 #### `juce::juce_recommended_warning_flags`
 
-    target_link_libraries(myTarget PRIVATE juce::juce_recommended_warning_flags)
+    target_link_libraries(myTarget PUBLIC juce::juce_recommended_warning_flags)
 
 This is a target which can be linked to other targets using `target_link_libraries`, in order to
 enable the recommended JUCE warnings when building them.
 
+This target just sets compiler and linker flags, and doesn't have any associated libraries or
+include directories. When building plugins, it's probably desirable to link this to the shared code
+target with `PUBLIC` visibility, so that all the plugin wrappers inherit the same compile/link
+flags.
+
 #### `juce::juce_recommended_config_flags`
 
-    target_link_libraries(myTarget PRIVATE juce::juce_recommended_config_flags)
+    target_link_libraries(myTarget PUBLIC juce::juce_recommended_config_flags)
 
 This is a target which can be linked to other targets using `target_link_libraries`, in order to
 enable the recommended JUCE optimisation and debug flags.
 
+This target just sets compiler and linker flags, and doesn't have any associated libraries or
+include directories. When building plugins, it's probably desirable to link this to the shared code
+target with `PUBLIC` visibility, so that all the plugin wrappers inherit the same compile/link
+flags.
+
 #### `juce::juce_recommended_lto_flags`
 
-    target_link_libraries(myTarget PRIVATE juce::juce_recommended_lto_flags)
+    target_link_libraries(myTarget PUBLIC juce::juce_recommended_lto_flags)
 
 This is a target which can be linked to other targets using `target_link_libraries`, in order to
 enable the recommended JUCE link time optimisation settings.
+
+This target just sets compiler and linker flags, and doesn't have any associated libraries or
+include directories. When building plugins, it's probably desirable to link this to the shared code
+target with `PUBLIC` visibility, so that all the plugin wrappers inherit the same compile/link
+flags.
+
