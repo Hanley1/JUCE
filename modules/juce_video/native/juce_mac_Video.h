@@ -636,12 +636,7 @@ private:
             playerAsyncInitialiser.loadAsync (url);
         }
 
-        void close()
-        {
-            detachPlayerStatusObserver();
-            detachPlaybackObserver();
-            setPlayer (nil);
-        }
+        void close() { setPlayer (nil); }
 
         void setPlayer (AVPlayer* player)
         {
