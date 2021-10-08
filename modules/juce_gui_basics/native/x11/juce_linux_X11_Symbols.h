@@ -29,10 +29,10 @@ namespace juce
 //==============================================================================
 namespace ReturnHelpers
 {
-    template<typename Type>
+    template <typename Type>
     Type returnDefaultConstructedAnyType()               { return {}; }
 
-    template<>
+    template <>
     inline void returnDefaultConstructedAnyType<void>()  {}
 }
 
@@ -453,6 +453,10 @@ public:
                                          (::Display*, Bool),
                                          void)
 
+    JUCE_GENERATE_FUNCTION_WITH_DEFAULT (XSynchronize, xSynchronize,
+                                         (::Display*, Bool),
+                                         int)
+
     JUCE_GENERATE_FUNCTION_WITH_DEFAULT (XTranslateCoordinates, xTranslateCoordinates,
                                          (::Display*, ::Window, ::Window, int, int, int*, int*, ::Window*),
                                          Bool)
@@ -575,7 +579,7 @@ public:
    #endif
 
     //==============================================================================
-    JUCE_DECLARE_SINGLETON_SINGLETHREADED_MINIMAL (X11Symbols)
+    JUCE_DECLARE_SINGLETON (X11Symbols, false)
 
 private:
     X11Symbols() = default;

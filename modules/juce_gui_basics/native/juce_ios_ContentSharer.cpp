@@ -120,7 +120,7 @@ private:
 
         controller.get().modalTransitionStyle = UIModalTransitionStyleCoverVertical;
 
-        auto bounds = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+        auto bounds = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
         setBounds (bounds);
 
         setAlwaysOnTop (true);
@@ -191,8 +191,8 @@ private:
 
     ContentSharer& owner;
     UIViewComponentPeer* peer = nullptr;
-    std::unique_ptr<UIActivityViewController, NSObjectDeleter> controller;
-    std::unique_ptr<NSObject<UIPopoverPresentationControllerDelegate>, NSObjectDeleter> popoverDelegate;
+    NSUniquePtr<UIActivityViewController> controller;
+    NSUniquePtr<NSObject<UIPopoverPresentationControllerDelegate>> popoverDelegate;
 
     bool succeeded = false;
     String errorDescription;

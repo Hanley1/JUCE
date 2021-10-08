@@ -98,6 +98,11 @@ public:
     bool isOSX() const override                      { return false; }
     bool isiOS() const override                      { return false; }
 
+    Identifier getExporterIdentifier() const override
+    {
+        return isLinux() ? getValueTreeTypeNameLinux() : getValueTreeTypeNameWindows();
+    }
+
     String getNewLineString() const override         { return isWindows() ? "\r\n" : "\n"; }
 
     bool supportsTargetType (build_tools::ProjectType::Target::Type type) const override
@@ -350,12 +355,14 @@ private:
         auto keys = defines.getAllKeys();
         auto values = defines.getAllValues();
 
+        const auto escapedQuote = isWindows() ? "\\\"" : "\\\\\"";
+
         for (int i = 0; i < defines.size(); ++i)
         {
             auto result = keys[i];
 
             if (values[i].isNotEmpty())
-                result += "=" + values[i];
+                result += "=\"" + values[i].replace ("\"", escapedQuote) + "\"";
 
             defs.add (result);
         }
@@ -569,7 +576,7 @@ private:
                 for (auto& def : getDefines (config, target))
                 {
                     if (! def.containsChar ('='))
-                            def << '=';
+                        def << '=';
 
                     flags.add ("-D" + def);
                 }

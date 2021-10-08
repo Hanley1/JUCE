@@ -42,17 +42,32 @@ ProjectSaver::ProjectSaver (Project& p)
     generatedFilesGroup.setID (generatedGroupID);
 }
 
-Result ProjectSaver::save (ProjectExporter* exporterToSave)
+void ProjectSaver::save (Async async, ProjectExporter* exporterToSave, std::function<void (Result)> onCompletion)
 {
-    if (! ProjucerApplication::getApp().isRunningCommandLine)
+    if (async == Async::yes)
+        saveProjectAsync (exporterToSave, std::move (onCompletion));
+    else
+        onCompletion (saveProject (exporterToSave));
+}
+
+void ProjectSaver::saveProjectAsync (ProjectExporter* exporterToSave, std::function<void (Result)> onCompletion)
+{
+    jassert (saveThread == nullptr);
+
+    saveThread = std::make_unique<SaveThreadWithProgressWindow> (*this, exporterToSave,
+                                                                 [ref = WeakReference<ProjectSaver> { this }, onCompletion] (Result result)
     {
-        SaveThreadWithProgressWindow thread (*this, exporterToSave);
-        thread.runThread();
+        if (ref == nullptr)
+            return;
 
-        return thread.result;
-    }
+        // Clean up old save thread in case onCompletion wants to start a new save thread
+        ref->saveThread->waitForThreadToExit (-1);
+        ref->saveThread = nullptr;
 
-    return saveProject (exporterToSave);
+        if (onCompletion != nullptr)
+            onCompletion (result);
+    });
+    saveThread->launchThread();
 }
 
 Result ProjectSaver::saveResourcesOnly()
@@ -72,19 +87,6 @@ void ProjectSaver::saveBasicProjectItems (const OwnedArray<LibraryModule>& modul
     writeBinaryDataFiles();
     writeAppHeader (modules);
     writeModuleCppWrappers (modules);
-}
-
-Result ProjectSaver::saveContentNeededForLiveBuild()
-{
-    auto modules = getModules();
-
-    if (errors.isEmpty())
-    {
-        saveBasicProjectItems (modules, loadUserContentFromAppConfig());
-        return Result::ok();
-    }
-
-    return Result::fail (errors[0]);
 }
 
 Project::Item ProjectSaver::addFileToGeneratedGroup (const File& file)
@@ -250,20 +252,24 @@ OwnedArray<LibraryModule> ProjectSaver::getModules()
     OwnedArray<LibraryModule> modules;
     project.getEnabledModules().createRequiredModules (modules);
 
+    auto isCommandLine = ProjucerApplication::getApp().isRunningCommandLine;
+
     for (auto* module : modules)
     {
         if (! module->isValid())
         {
-            addError ("At least one of your JUCE module paths is invalid!\n"
-                      "Please go to the Modules settings page and ensure each path points to the correct JUCE modules folder.");
+            addError (String ("At least one of your JUCE module paths is invalid!\n")
+                + (isCommandLine ? "Please ensure each module path points to the correct JUCE modules folder."
+                                 : "Please go to the Modules settings page and ensure each path points to the correct JUCE modules folder."));
 
             return {};
         }
 
         if (project.getEnabledModules().getExtraDependenciesNeeded (module->getID()).size() > 0)
         {
-            addError ("At least one of your modules has missing dependencies!\n"
-                      "Please go to the settings page of the highlighted modules and add the required dependencies.");
+            addError (String ("At least one of your modules has missing dependencies!\n")
+                + (isCommandLine ? "Please add the required dependencies, or run the command again with the \"--fix-missing-dependencies\" option."
+                                 : "Please go to the settings page of the highlighted modules and add the required dependencies."));
 
             return {};
         }
@@ -531,7 +537,7 @@ void ProjectSaver::writeAppHeader (MemoryOutputStream& out, const OwnedArray<Lib
         << " /** If you've hit this error then the version of the Projucer that was used to generate this project is" << newLine
         << "     older than the version of the JUCE modules being included. To fix this error, re-save your project" << newLine
         << "     using the latest version of the Projucer or, if you aren't using the Projucer to manage your project," << newLine
-        << "     remove the JUCE_PROJUCER_VERSION define from the AppConfig.h file." << newLine
+        << "     remove the JUCE_PROJUCER_VERSION define." << newLine
         << " */" << newLine
         << " #error \"This project was last saved using an outdated version of the Projucer! Re-save this project with the latest version to fix this error.\"" << newLine
         << "#endif" << newLine

@@ -422,10 +422,10 @@ struct PushNotificationsDelegate
 
         id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
 
-        SEL selector = NSSelectorFromString (@"setPushNotificationsDelegateToUse:");
-
-        if ([appDelegate respondsToSelector: selector])
-            [appDelegate performSelector: selector withObject: delegate.get()];
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
+        if ([appDelegate respondsToSelector: @selector (setPushNotificationsDelegateToUse:)])
+            [appDelegate performSelector: @selector (setPushNotificationsDelegateToUse:) withObject: delegate.get()];
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
     }
 
     virtual ~PushNotificationsDelegate() {}
@@ -467,9 +467,9 @@ struct PushNotificationsDelegate
 
 protected:
    #if defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-    std::unique_ptr<NSObject<UIApplicationDelegate, UNUserNotificationCenterDelegate>, NSObjectDeleter> delegate;
+    NSUniquePtr<NSObject<UIApplicationDelegate, UNUserNotificationCenterDelegate>> delegate;
    #else
-    std::unique_ptr<NSObject<UIApplicationDelegate>, NSObjectDeleter> delegate;
+    NSUniquePtr<NSObject<UIApplicationDelegate>> delegate;
    #endif
 
 private:

@@ -143,12 +143,18 @@ public:
     void removeGlobalMouseListener (MouseListener* listener);
 
     //==============================================================================
-    /** Registers a MouseListener that will receive a callback whenever the focused
+    /** Registers a FocusChangeListener that will receive a callback whenever the focused
         component changes.
+
+        @see removeFocusChangeListener
     */
     void addFocusChangeListener (FocusChangeListener* listener);
 
-    /** Unregisters a listener that was added with addFocusChangeListener(). */
+    /** Unregisters a FocusChangeListener that was added with the addFocusChangeListener()
+        method.
+
+        @see addFocusChangeListener
+    */
     void removeFocusChangeListener (FocusChangeListener* listener);
 
     //==============================================================================
@@ -325,6 +331,10 @@ public:
     bool isOrientationEnabled (DisplayOrientation orientation) const noexcept;
 
     //==============================================================================
+    /** Returns the Displays object representing the connected displays.
+
+        @see Displays
+    */
     const Displays& getDisplays() const noexcept        { return *displays; }
 
     //==============================================================================
@@ -346,6 +356,10 @@ public:
     /** OSX-specific function to check for the "dark" title-bar and menu mode. */
     static bool isOSXDarkModeActive();
    #endif
+
+    //==============================================================================
+    /** Returns true on a headless system where there are no connected displays. */
+    bool isHeadless() const noexcept;
 
 private:
     //==============================================================================

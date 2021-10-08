@@ -156,7 +156,7 @@ private:
                 voiceProduct.purchasePrice = "In-App purchases unavailable";
             }
 
-            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+            AlertWindow::showMessageBoxAsync (MessageBoxIconType::WarningIcon,
                                               "In-app purchase is unavailable!",
                                               "In-App purchases are not available. This either means you are trying "
                                               "to use IAP on a platform that does not support IAP or you haven't setup "
@@ -178,7 +178,7 @@ private:
                 }
             }
 
-            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+            AlertWindow::showMessageBoxAsync (MessageBoxIconType::WarningIcon,
                                               "Your credit card will be charged!",
                                               "You are running the sample code for JUCE In-App purchases. "
                                               "Although this is only sample code, it will still CHARGE YOUR CREDIT CARD!",
@@ -510,7 +510,7 @@ public:
         soundNames = purchases.getVoiceNames();
 
        #if JUCE_ANDROID || JUCE_IOS
-        auto screenBounds = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+        auto screenBounds = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
         setSize (screenBounds.getWidth(), screenBounds.getHeight());
        #else
         setSize (800, 600);

@@ -26,6 +26,11 @@
 namespace juce
 {
 
+#if ! (defined (__IPHONE_16_0) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_16_0)
+ JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-declarations")
+ #define JUCE_DEPRECATION_IGNORED 1
+#endif
+
 class FileChooser::Native  : public FileChooser::Pimpl,
                              public Component,
                              private AsyncUpdater
@@ -112,7 +117,7 @@ public:
                 return;
             }
 
-            auto chooserBounds = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+            auto chooserBounds = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
             setBounds (chooserBounds);
 
             setAlwaysOnTop (true);
@@ -135,6 +140,8 @@ public:
     {
        #if JUCE_MODAL_LOOPS_PERMITTED
         runModalLoop();
+       #else
+        jassertfalse;
        #endif
     }
 
@@ -182,20 +189,13 @@ private:
                 jassert (filter.upToLastOccurrenceOf (".", true, false) == "*.");
 
                 auto fileExtension = filter.fromLastOccurrenceOf (".", false, false);
-                auto fileExtensionCF = fileExtension.toCFString();
+                CFUniquePtr<CFStringRef> fileExtensionCF (fileExtension.toCFString());
 
                 if (firstExtension.isEmpty())
                     firstExtension = fileExtension;
 
-                auto tag = UTTypeCreatePreferredIdentifierForTag (kUTTagClassFilenameExtension, fileExtensionCF, nullptr);
-
-                if (tag != nullptr)
-                {
-                    result.add (String::fromCFString (tag));
-                    CFRelease (tag);
-                }
-
-                CFRelease (fileExtensionCF);
+                if (auto tag = CFUniquePtr<CFStringRef> (UTTypeCreatePreferredIdentifierForTag (kUTTagClassFilenameExtension, fileExtensionCF.get(), nullptr)))
+                    result.add (String::fromCFString (tag.get()));
             }
         }
         else
@@ -351,8 +351,8 @@ private:
 
     //==============================================================================
     FileChooser& owner;
-    std::unique_ptr<NSObject<UIDocumentPickerDelegate>, NSObjectDeleter> delegate;
-    std::unique_ptr<UIDocumentPickerViewController,     NSObjectDeleter> controller;
+    NSUniquePtr<NSObject<UIDocumentPickerDelegate>> delegate;
+    NSUniquePtr<UIDocumentPickerViewController> controller;
     UIViewComponentPeer* peer = nullptr;
 
     static FileChooserDelegateClass fileChooserDelegateClass;
@@ -372,10 +372,16 @@ bool FileChooser::isPlatformDialogAvailable()
    #endif
 }
 
-FileChooser::Pimpl* FileChooser::showPlatformDialog (FileChooser& owner, int flags,
-                                                     FilePreviewComponent*)
+std::shared_ptr<FileChooser::Pimpl> FileChooser::showPlatformDialog (FileChooser& owner, int flags,
+                                                                     FilePreviewComponent*)
 {
-    return new FileChooser::Native (owner, flags);
+    return std::make_shared<FileChooser::Native> (owner, flags);
 }
+
+#if JUCE_DEPRECATION_IGNORED
+ JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+#endif
+
+#undef JUCE_DEPRECATION_IGNORED
 
 } // namespace juce

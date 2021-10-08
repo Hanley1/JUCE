@@ -23,9 +23,10 @@
   ==============================================================================
 */
 
+#include <juce_core/system/juce_TargetPlatform.h>
+
 #if JucePlugin_Build_Unity
 
-#include <juce_core/system/juce_TargetPlatform.h>
 #include "../utility/juce_IncludeModuleHeaders.h"
 #include <juce_audio_processors/format_types/juce_LegacyAudioParameter.cpp>
 
@@ -324,9 +325,7 @@ public:
         short configs[][2] = { JucePlugin_PreferredChannelConfigurations };
         const int numConfigs = sizeof (configs) / sizeof (short[2]);
 
-        jassert (numConfigs > 0 && (configs[0][0] > 0 || configs[0][1] > 0));
-
-        ignoreUnused (numConfigs);
+        jassertquiet (numConfigs > 0 && (configs[0][0] > 0 || configs[0][1] > 0));
 
         pluginInstance->setPlayConfigDetails (configs[0][0], configs[0][1], state->sampleRate, samplesPerBlock);
        #else

@@ -272,10 +272,10 @@ struct PushNotificationsDelegate
 
         id<NSApplicationDelegate> appDelegate = [[NSApplication sharedApplication] delegate];
 
-        SEL selector = NSSelectorFromString (@"setPushNotificationsDelegate:");
-
-        if ([appDelegate respondsToSelector: selector])
-            [appDelegate performSelector: selector withObject: delegate.get()];
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
+        if ([appDelegate respondsToSelector: @selector (setPushNotificationsDelegate:)])
+            [appDelegate performSelector: @selector (setPushNotificationsDelegate:) withObject: delegate.get()];
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
         [NSUserNotificationCenter defaultUserNotificationCenter].delegate = delegate.get();
     }
@@ -298,7 +298,7 @@ struct PushNotificationsDelegate
     virtual bool shouldPresentNotification (NSUserNotification* notification) = 0;
 
 protected:
-    std::unique_ptr<NSObject<NSApplicationDelegate, NSUserNotificationCenterDelegate>, NSObjectDeleter> delegate;
+    NSUniquePtr<NSObject<NSApplicationDelegate, NSUserNotificationCenterDelegate>> delegate;
 
 private:
     struct Class    : public ObjCClass<NSObject<NSApplicationDelegate, NSUserNotificationCenterDelegate>>
@@ -312,7 +312,7 @@ private:
             addMethod (@selector (application:didReceiveRemoteNotification:),                     didReceiveRemoteNotification,           "v@:@@");
             addMethod (@selector (userNotificationCenter:didDeliverNotification:),                didDeliverNotification,                 "v@:@@");
             addMethod (@selector (userNotificationCenter:didActivateNotification:),               didActivateNotification,                "v@:@@");
-            addMethod (@selector (userNotificationCenter:shouldPresentNotification:),             shouldPresentNotification,              "B@:@@");
+            addMethod (@selector (userNotificationCenter:shouldPresentNotification:),             shouldPresentNotification,              "c@:@@");
 
             registerClass();
         }

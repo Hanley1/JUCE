@@ -587,37 +587,42 @@ private:
         {
             audioFileReader.stop();
 
-            if (fileChooser == nullptr)
+            if (fileChooser != nullptr)
+                return;
+
+            if (! RuntimePermissions::isGranted (RuntimePermissions::readExternalStorage))
             {
                 SafePointer<AudioPlayerHeader> safeThis (this);
-
-                if (! RuntimePermissions::isGranted (RuntimePermissions::readExternalStorage))
-                {
-                    RuntimePermissions::request (RuntimePermissions::readExternalStorage,
-                                                 [safeThis] (bool granted) mutable
-                                                 {
-                                                     if (granted)
-                                                         safeThis->openFile();
-                                                 });
-                    return;
-                }
-
-                fileChooser.reset (new FileChooser ("Select an audio file...", File(), "*.wav;*.mp3;*.aif"));
-
-                fileChooser->launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
-                                          [safeThis] (const FileChooser& fc) mutable
-                                          {
-                                              if (safeThis != nullptr && fc.getURLResults().size() > 0)
-                                              {
-                                                  auto u = fc.getURLResult();
-
-                                                  if (! safeThis->audioFileReader.loadURL (u))
-                                                      NativeMessageBox::showOkCancelBox (AlertWindow::WarningIcon, "Error loading file", "Unable to load audio file", nullptr, nullptr);
-                                                  else
-                                                      safeThis->thumbnailComp.setCurrentURL (u);
-                                              }
-                                          }, nullptr);
+                RuntimePermissions::request (RuntimePermissions::readExternalStorage,
+                                             [safeThis] (bool granted) mutable
+                                             {
+                                                 if (safeThis != nullptr && granted)
+                                                     safeThis->openFile();
+                                             });
+                return;
             }
+
+            fileChooser.reset (new FileChooser ("Select an audio file...", File(), "*.wav;*.mp3;*.aif"));
+
+            fileChooser->launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
+                                      [this] (const FileChooser& fc) mutable
+                                      {
+                                          if (fc.getURLResults().size() > 0)
+                                          {
+                                              auto u = fc.getURLResult();
+
+                                              if (! audioFileReader.loadURL (u))
+                                                  NativeMessageBox::showAsync (MessageBoxOptions()
+                                                                                 .withIconType (MessageBoxIconType::WarningIcon)
+                                                                                 .withTitle ("Error loading file")
+                                                                                 .withMessage ("Unable to load audio file"),
+                                                                               nullptr);
+                                              else
+                                                  thumbnailComp.setCurrentURL (u);
+                                          }
+
+                                          fileChooser = nullptr;
+                                      }, nullptr);
         }
 
         void changeListenerCallback (ChangeBroadcaster*) override

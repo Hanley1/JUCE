@@ -80,8 +80,8 @@ struct StatusItemContainer   : public Timer
     //==============================================================================
     SystemTrayIconComponent& owner;
 
-    std::unique_ptr<NSStatusItem, NSObjectDeleter> statusItem;
-    std::unique_ptr<NSImage, NSObjectDeleter> statusIcon;
+    NSUniquePtr<NSStatusItem> statusItem;
+    NSUniquePtr<NSImage> statusIcon;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StatusItemContainer)
 };
@@ -201,7 +201,7 @@ struct ButtonBasedStatusItem   : public StatusItemContainer
     };
 
     //==============================================================================
-    std::unique_ptr<NSObject, NSObjectDeleter> eventForwarder;
+    NSUniquePtr<NSObject> eventForwarder;
 };
 
 //==============================================================================
@@ -223,10 +223,12 @@ struct ViewBasedStatusItem   : public StatusItemContainer
 
         SystemTrayViewClass::frameChanged (view.get(), SEL(), nullptr);
 
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
         [[NSNotificationCenter defaultCenter]  addObserver: view.get()
                                                   selector: @selector (frameChanged:)
                                                       name: NSWindowDidMoveNotification
                                                     object: nil];
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
     }
 
     ~ViewBasedStatusItem() override
@@ -312,7 +314,10 @@ struct ViewBasedStatusItem   : public StatusItemContainer
             addMethod (@selector (mouseDown:),      handleEventDown, "v@:@");
             addMethod (@selector (rightMouseDown:), handleEventDown, "v@:@");
             addMethod (@selector (drawRect:),       drawRect,        "v@:@");
+
+            JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
             addMethod (@selector (frameChanged:),   frameChanged,    "v@:@");
+            JUCE_END_IGNORE_WARNINGS_GCC_LIKE
 
             registerClass();
         }
@@ -363,7 +368,7 @@ struct ViewBasedStatusItem   : public StatusItemContainer
     };
 
     //==============================================================================
-    std::unique_ptr<NSControl, NSObjectDeleter> view;
+    NSUniquePtr<NSControl> view;
     bool isHighlighted = false;
 };
 

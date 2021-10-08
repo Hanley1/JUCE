@@ -121,6 +121,7 @@ ProjectExporter::ExporterTypeInfo ProjectExporter::getTypeInfoForExporter (const
     if (iter != typeInfos.end())
         return *iter;
 
+    jassertfalse;
     return {};
 }
 
@@ -130,7 +131,7 @@ ProjectExporter::ExporterTypeInfo ProjectExporter::getCurrentPlatformExporterTyp
      return ProjectExporter::getTypeInfoForExporter (XcodeProjectExporter::getValueTreeTypeNameMac());
     #elif JUCE_WINDOWS
      return ProjectExporter::getTypeInfoForExporter (MSVCProjectExporterVC2019::getValueTreeTypeName());
-    #elif JUCE_LINUX
+    #elif JUCE_LINUX || JUCE_BSD
      return ProjectExporter::getTypeInfoForExporter (MakefileProjectExporter::getValueTreeTypeName());
     #else
      #error "unknown platform!"
@@ -332,10 +333,10 @@ void ProjectExporter::createIconProperties (PropertyListBuilder& props)
     choices.add ("<None>");
     ids.add (var());
 
-    for (int i = 0; i < images.size(); ++i)
+    for (const auto* imageItem : images)
     {
-        choices.add (images.getUnchecked(i)->getName());
-        ids.add (images.getUnchecked(i)->getID());
+        choices.add (imageItem->getName());
+        ids.add (imageItem->getID());
     }
 
     props.add (new ChoicePropertyComponent (smallIconValue, "Icon (Small)", choices, ids),
@@ -410,11 +411,12 @@ StringPairArray ProjectExporter::getAllPreprocessorDefs (const BuildConfiguratio
 {
     auto defs = mergePreprocessorDefs (config.getAllPreprocessorDefs(),
                                        parsePreprocessorDefs (getExporterPreprocessorDefsString()));
+
     addDefaultPreprocessorDefs (defs);
     addTargetSpecificPreprocessorDefs (defs, targetType);
 
     if (! project.shouldUseAppConfig())
-        defs = mergePreprocessorDefs (defs, project.getAppConfigDefs());
+        defs = mergePreprocessorDefs (project.getAppConfigDefs(), defs);
 
     return defs;
 }
@@ -465,8 +467,8 @@ void ProjectExporter::addDefaultPreprocessorDefs (StringPairArray& defs) const
 String ProjectExporter::replacePreprocessorTokens (const ProjectExporter::BuildConfiguration& config,
                                                    const String& sourceString) const
 {
-    return build_tools::replacePreprocessorDefs (getAllPreprocessorDefs (config,
-                                                 build_tools::ProjectType::Target::unspecified), sourceString);
+    return build_tools::replacePreprocessorDefs (getAllPreprocessorDefs (config, build_tools::ProjectType::Target::unspecified),
+                                                 sourceString);
 }
 
 void ProjectExporter::copyMainGroupFromProject()
@@ -867,7 +869,7 @@ ProjectExporter::BuildConfiguration::BuildConfiguration (Project& p, const Value
         "-Wno-missing-field-initializers", "-Wno-ignored-qualifiers",
         "-Wswitch-enum"
     };
-    recommendedCompilerWarningFlags["GCC"] = { "-Wall", "-Wextra", "-Wstrict-aliasing", "-Wuninitialized", "-Wunused-parameter", "-Wsign-compare",
+    recommendedCompilerWarningFlags["GCC"] = { "-Wall", "-Wextra", "-Wshadow", "-Wstrict-aliasing", "-Wuninitialized", "-Wunused-parameter", "-Wsign-compare",
         "-Woverloaded-virtual", "-Wreorder", "-Wsign-conversion", "-Wunreachable-code",
         "-Wzero-as-null-pointer-constant", "-Wcast-align", "-Wno-implicit-fallthrough",
         "-Wno-maybe-uninitialized", "-Wno-missing-field-initializers", "-Wno-ignored-qualifiers",
@@ -1023,7 +1025,12 @@ StringArray ProjectExporter::BuildConfiguration::getLibrarySearchPaths() const
     auto s = getSearchPathsFromString (getLibrarySearchPathString());
 
     for (auto path : exporter.moduleLibSearchPaths)
+    {
+        if (exporter.isXcode())
+            s.add (path);
+
         s.add (path + separator + getModuleLibraryArchName());
+    }
 
     return s;
 }

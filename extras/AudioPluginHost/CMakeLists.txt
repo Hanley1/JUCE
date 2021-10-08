@@ -42,14 +42,15 @@ target_compile_definitions(AudioPluginHost PRIVATE
     JUCE_ALSA=1
     JUCE_DIRECTSOUND=1
     JUCE_PLUGINHOST_LADSPA=1
-    JUCE_PLUGINHOST_VST=0
     JUCE_PLUGINHOST_VST3=1
+    JUCE_PLUGINHOST_VST=0
     JUCE_USE_CAMERA=0
     JUCE_USE_CDBURNER=0
     JUCE_USE_CDREADER=0
     JUCE_USE_CURL=0
     JUCE_USE_FLAC=0
     JUCE_USE_OGGVORBIS=1
+    JUCE_VST3_HOST_CROSS_PLATFORM_UID=1
     JUCE_WASAPI=1
     JUCE_WEB_BROWSER=0)
 
@@ -58,7 +59,6 @@ target_link_libraries(AudioPluginHost PRIVATE
     juce::juce_cryptography
     juce::juce_dsp
     juce::juce_opengl
-    juce::juce_video
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags)

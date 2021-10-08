@@ -32,6 +32,8 @@ namespace WindowsFileHelpers
 {
     //==============================================================================
    #if JUCE_WINDOWS
+    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wnested-anon-types")
+
     typedef struct _REPARSE_DATA_BUFFER {
       ULONG  ReparseTag;
       USHORT ReparseDataLength;
@@ -57,6 +59,8 @@ namespace WindowsFileHelpers
         } GenericReparseBuffer;
       } DUMMYUNIONNAME;
     } *PREPARSE_DATA_BUFFER, REPARSE_DATA_BUFFER;
+
+    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
    #endif
 
     //==============================================================================
@@ -717,7 +721,7 @@ static String readWindowsLnkFile (File lnkFile, bool wantsAbsolutePath)
              && SUCCEEDED (persistFile->Load (lnkFile.getFullPathName().toWideCharPointer(), STGM_READ))
              && (! wantsAbsolutePath || SUCCEEDED (shellLink->Resolve (nullptr, SLR_ANY_MATCH | SLR_NO_UI))))
         {
-            WIN32_FIND_DATA winFindData;
+            WIN32_FIND_DATA winFindData = {};
             WCHAR resolvedPath[MAX_PATH];
 
             DWORD flags = SLGP_UNCPRIORITY;
@@ -861,7 +865,7 @@ bool File::createShortcut (const String& description, const File& linkFileToCrea
     ComSmartPtr<IShellLink> shellLink;
     ComSmartPtr<IPersistFile> persistFile;
 
-    CoInitialize (nullptr);
+    ignoreUnused (CoInitialize (nullptr));
 
     return SUCCEEDED (shellLink.CoCreateInstance (CLSID_ShellLink))
         && SUCCEEDED (shellLink->SetPath (getFullPathName().toWideCharPointer()))
@@ -874,8 +878,8 @@ bool File::createShortcut (const String& description, const File& linkFileToCrea
 class DirectoryIterator::NativeIterator::Pimpl
 {
 public:
-    Pimpl (const File& directory, const String& wildCard)
-        : directoryWithWildCard (directory.getFullPathName().isNotEmpty() ? File::addTrailingSeparator (directory.getFullPathName()) + wildCard : String()),
+    Pimpl (const File& directory, const String& wildCardIn)
+        : directoryWithWildCard (directory.getFullPathName().isNotEmpty() ? File::addTrailingSeparator (directory.getFullPathName()) + wildCardIn : String()),
           handle (INVALID_HANDLE_VALUE)
     {
     }
@@ -925,8 +929,8 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
-DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCard)
-    : pimpl (new DirectoryIterator::NativeIterator::Pimpl (directory, wildCard))
+DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCardIn)
+    : pimpl (new DirectoryIterator::NativeIterator::Pimpl (directory, wildCardIn))
 {
 }
 
@@ -975,7 +979,7 @@ public:
     Pimpl (const String& pipeName, const bool createPipe, bool mustNotExist)
         : filename ("\\\\.\\pipe\\" + File::createLegalFileName (pipeName)),
           pipeH (INVALID_HANDLE_VALUE),
-          cancelEvent (CreateEvent (nullptr, FALSE, FALSE, nullptr)),
+          cancelEvent (CreateEvent (nullptr, TRUE, FALSE, nullptr)),
           connected (false), ownsPipe (createPipe), shouldStop (false)
     {
         if (createPipe)
@@ -1071,14 +1075,12 @@ public:
                 return 0;
 
             OverlappedEvent over;
-            unsigned long numRead;
+            unsigned long numRead = 0;
 
             if (ReadFile (pipeH, destBuffer, (DWORD) maxBytesToRead, &numRead, &over.over))
                 return (int) numRead;
 
-            const DWORD lastError = GetLastError();
-
-            if (lastError == ERROR_IO_PENDING)
+            if (GetLastError() == ERROR_IO_PENDING)
             {
                 if (! waitForIO (over, timeOutMilliseconds))
                     return -1;
@@ -1087,7 +1089,9 @@ public:
                     return (int) numRead;
             }
 
-            if (ownsPipe && (GetLastError() == ERROR_BROKEN_PIPE || GetLastError() == ERROR_PIPE_NOT_CONNECTED))
+            const auto lastError = GetLastError();
+
+            if (ownsPipe && (lastError == ERROR_BROKEN_PIPE || lastError == ERROR_PIPE_NOT_CONNECTED))
                 disconnectPipe();
             else
                 break;
@@ -1127,7 +1131,8 @@ public:
 
     const String filename;
     HANDLE pipeH, cancelEvent;
-    bool connected, ownsPipe, shouldStop;
+    bool connected, ownsPipe;
+    std::atomic<bool> shouldStop;
     CriticalSection createFileLock;
 
 private:
@@ -1150,10 +1155,13 @@ private:
     bool waitForIO (OverlappedEvent& over, int timeOutMilliseconds)
     {
         if (shouldStop)
+        {
+            CancelIo (pipeH);
             return false;
+        }
 
         HANDLE handles[] = { over.over.hEvent, cancelEvent };
-        DWORD waitResult = WaitForMultipleObjects (2, handles, FALSE,
+        DWORD waitResult = WaitForMultipleObjects (numElementsInArray (handles), handles, FALSE,
                                                    timeOutMilliseconds >= 0 ? (DWORD) timeOutMilliseconds
                                                                             : INFINITE);
 
@@ -1169,11 +1177,17 @@ private:
 
 void NamedPipe::close()
 {
-    if (pimpl != nullptr)
     {
-        pimpl->shouldStop = true;
-        SetEvent (pimpl->cancelEvent);
+        ScopedReadLock sl (lock);
 
+        if (pimpl != nullptr)
+        {
+            pimpl->shouldStop = true;
+            SetEvent (pimpl->cancelEvent);
+        }
+    }
+
+    {
         ScopedWriteLock sl (lock);
         pimpl.reset();
     }
@@ -1181,22 +1195,19 @@ void NamedPipe::close()
 
 bool NamedPipe::openInternal (const String& pipeName, const bool createPipe, bool mustNotExist)
 {
-    pimpl.reset (new Pimpl (pipeName, createPipe, mustNotExist));
+    auto newPimpl = std::make_unique<Pimpl> (pipeName, createPipe, mustNotExist);
 
     if (createPipe)
     {
-        if (pimpl->pipeH == INVALID_HANDLE_VALUE)
-        {
-            pimpl.reset();
+        if (newPimpl->pipeH == INVALID_HANDLE_VALUE)
             return false;
-        }
     }
-    else if (! pimpl->connect (200))
+    else if (! newPimpl->connect (200))
     {
-        pimpl.reset();
         return false;
     }
 
+    pimpl = std::move (newPimpl);
     return true;
 }
 

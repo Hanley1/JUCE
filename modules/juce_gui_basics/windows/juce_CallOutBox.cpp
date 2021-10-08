@@ -40,7 +40,7 @@ CallOutBox::CallOutBox (Component& c, Rectangle<int> area, Component* const pare
     else
     {
         setAlwaysOnTop (juce_areThereAnyAlwaysOnTopWindows());
-        updatePosition (area, Desktop::getInstance().getDisplays().findDisplayForRect (area).userArea);
+        updatePosition (area, Desktop::getInstance().getDisplays().getDisplayForRect (area)->userArea);
         addToDesktop (ComponentPeer::windowIsTemporary);
 
         startTimer (100);
@@ -67,7 +67,7 @@ public:
 
     void timerCallback() override
     {
-        if (! Process::isForegroundProcess())
+        if (! isForegroundOrEmbeddedProcess (&callout))
             callout.dismiss();
     }
 
@@ -260,6 +260,12 @@ void CallOutBox::timerCallback()
 {
     toFront (true);
     stopTimer();
+}
+
+//==============================================================================
+std::unique_ptr<AccessibilityHandler> CallOutBox::createAccessibilityHandler()
+{
+    return std::make_unique<AccessibilityHandler> (*this, AccessibilityRole::window);
 }
 
 } // namespace juce

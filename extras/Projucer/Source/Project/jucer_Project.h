@@ -31,7 +31,7 @@
 class ProjectExporter;
 class LibraryModule;
 class EnabledModulesList;
-class CompileEngineSettings;
+class ProjectSaver;
 
 namespace ProjectMessages
 {
@@ -48,6 +48,7 @@ namespace ProjectMessages
         DECLARE_ID (jucerFileModified);
         DECLARE_ID (missingModuleDependencies);
         DECLARE_ID (oldProjucer);
+        DECLARE_ID (cLion);
         DECLARE_ID (newVersionAvailable);
 
         DECLARE_ID (notification);
@@ -60,17 +61,15 @@ namespace ProjectMessages
 
     inline Identifier getTypeForMessage (const Identifier& message)
     {
-        if (message == Ids::incompatibleLicense || message == Ids::cppStandard || message == Ids::moduleNotFound
-            || message == Ids::jucePath || message == Ids::jucerFileModified || message == Ids::missingModuleDependencies
-            || message == Ids::oldProjucer)
-        {
+        static Identifier warnings[] = { Ids::incompatibleLicense, Ids::cppStandard, Ids::moduleNotFound,
+                                         Ids::jucePath, Ids::jucerFileModified, Ids::missingModuleDependencies,
+                                         Ids::oldProjucer, Ids::cLion };
+
+        if (std::find (std::begin (warnings), std::end (warnings), message) != std::end (warnings))
             return Ids::warning;
-        }
 
         if (message == Ids::newVersionAvailable)
-        {
             return Ids::notification;
-        }
 
         jassertfalse;
         return {};
@@ -86,6 +85,7 @@ namespace ProjectMessages
         if (message == Ids::missingModuleDependencies)  return "Missing Module Dependencies";
         if (message == Ids::oldProjucer)                return "Projucer Out of Date";
         if (message == Ids::newVersionAvailable)        return "New Version Available";
+        if (message == Ids::cLion)                      return "Deprecated Exporter";
 
         jassertfalse;
         return {};
@@ -101,6 +101,7 @@ namespace ProjectMessages
         if (message == Ids::missingModuleDependencies)  return "Module(s) have missing dependencies.";
         if (message == Ids::oldProjucer)                return "The version of the Projucer you are using is out of date.";
         if (message == Ids::newVersionAvailable)        return "A new version of JUCE is available to download.";
+        if (message == Ids::cLion)                      return "The CLion exporter is deprecated. Use JUCE's CMake support instead.";
 
         jassertfalse;
         return {};
@@ -108,6 +109,8 @@ namespace ProjectMessages
 
     using MessageAction = std::pair<String, std::function<void()>>;
 }
+
+enum class Async { no, yes };
 
 //==============================================================================
 class Project  : public FileBasedDocument,
@@ -125,10 +128,11 @@ public:
     String getDocumentTitle() override;
     Result loadDocument (const File& file) override;
     Result saveDocument (const File& file) override;
+    void saveDocumentAsync (const File& file, std::function<void (Result)> callback) override;
 
-    Result saveProject (ProjectExporter* exporterToSave = nullptr);
+    void saveProject (Async, ProjectExporter* exporterToSave, std::function<void (Result)> onCompletion);
     Result saveResourcesOnly();
-    Result openProjectInIDE (ProjectExporter& exporterToOpen, bool saveFirst);
+    void openProjectInIDE (ProjectExporter& exporterToOpen);
 
     File getLastDocumentOpened() override;
     void setLastDocumentOpened (const File& file) override;
@@ -205,8 +209,8 @@ public:
     bool shouldDisplaySplashScreen() const               { return displaySplashScreenValue.get(); }
     String getSplashScreenColourString() const           { return splashScreenColourValue.get(); }
 
-    static StringArray getCppStandardStrings()           { return { "C++11", "C++14", "C++17", "Use Latest" }; }
-    static Array<var> getCppStandardVars()               { return { "11",    "14",    "17",    "latest" }; }
+    static StringArray getCppStandardStrings()           { return { "C++14", "C++17", "Use Latest" }; }
+    static Array<var> getCppStandardVars()               { return { "14",    "17",    "latest" }; }
 
     String getCppStandardString() const                  { return cppStandardValue.get(); }
 
@@ -433,7 +437,6 @@ public:
     struct ExporterIterator
     {
         ExporterIterator (Project& project);
-        ~ExporterIterator();
 
         bool next();
 
@@ -486,14 +489,11 @@ public:
     String getUniqueTargetFolderSuffixForExporter (const Identifier& exporterIdentifier, const String& baseTargetFolder);
 
     //==============================================================================
-    bool isCurrentlySaving() const noexcept              { return isSaving; }
+    bool isCurrentlySaving() const noexcept              { return saver != nullptr; }
 
     bool isTemporaryProject() const noexcept             { return tempDirectory != File(); }
     File getTemporaryDirectory() const noexcept          { return tempDirectory; }
     void setTemporaryDirectory (const File&) noexcept;
-
-    //==============================================================================
-    CompileEngineSettings& getCompileEngineSettings()    { return *compileEngineSettings; }
 
     //==============================================================================
     ValueTree getProjectMessages() const  { return projectMessages; }
@@ -546,7 +546,6 @@ private:
                      pluginVSTNumMidiInputsValue, pluginVSTNumMidiOutputsValue;
 
     //==============================================================================
-    std::unique_ptr<CompileEngineSettings> compileEngineSettings;
     std::unique_ptr<EnabledModulesList> enabledModulesList;
 
     AvailableModulesList exporterPathsModulesList;
@@ -576,7 +575,6 @@ private:
 
     //==============================================================================
     friend class Item;
-    bool isSaving = false;
     StringPairArray parsedPreprocessorDefs;
 
     //==============================================================================
@@ -609,9 +607,11 @@ private:
     void updateJUCEPathWarning();
 
     void updateModuleWarnings();
+    void updateExporterWarnings();
     void updateCppStandardWarning (bool showWarning);
     void updateMissingModuleDependenciesWarning (bool showWarning);
     void updateOldProjucerWarning (bool showWarning);
+    void updateCLionWarning (bool showWarning);
     void updateModuleNotFoundWarning (bool showWarning);
 
     ValueTree projectMessages { ProjectMessages::Ids::projectMessages, {},
@@ -620,6 +620,10 @@ private:
 
     ProjectFileModificationPoller fileModificationPoller { *this };
 
+    std::unique_ptr<FileChooser> chooser;
+    std::unique_ptr<ProjectSaver> saver;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Project)
+    JUCE_DECLARE_WEAK_REFERENCEABLE (Project)
 };
