@@ -241,6 +241,8 @@ public:
     void focusLost (FocusChangeType) override;
     /** @internal */
     void colourChanged() override;
+    
+    void handleNoteOn  (MidiKeyboardState*, int, int, float) override;
 
 private:
     //==============================================================================
@@ -248,7 +250,6 @@ private:
     void drawWhiteKey (int midiNoteNumber, Graphics& g, Rectangle<float> area) override final;
     void drawBlackKey (int midiNoteNumber, Graphics& g, Rectangle<float> area) override final;
 
-    void handleNoteOn  (MidiKeyboardState*, int, int, float) override;
     void handleNoteOff (MidiKeyboardState*, int, int, float) override;
 
     //==============================================================================
