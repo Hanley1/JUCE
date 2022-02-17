@@ -242,7 +242,8 @@ struct Viewport::DragToScrollListener   : private MouseListener,
 
     void mouseDrag (const MouseEvent& e) override
     {
-        if (e.source == scrollSource
+        if (Desktop::getInstance().getNumDraggingMouseSources() == 1
+            && e.source == scrollSource
             && ! doesMouseEventComponentBlockViewportDrag (e.eventComponent))
         {
             auto totalOffset = e.getOffsetFromDragStart().toFloat();
@@ -260,15 +261,18 @@ struct Viewport::DragToScrollListener   : private MouseListener,
 
             if (isDragging)
             {
-                offsetX.drag (totalOffset.x);
-                offsetY.drag (totalOffset.y);
+                if (allowXDrag)
+                    offsetX.drag (totalOffset.x);
+                
+                if (allowYDrag)
+                    offsetY.drag (totalOffset.y);
             }
         }
     }
 
     void mouseUp (const MouseEvent& e) override
     {
-        if (isGlobalMouseListener && e.source == scrollSource)
+        if (isGlobalMouseListener && e.source == scrollSource && Desktop::getInstance().getNumDraggingMouseSources() == 0)
             endDragAndClearGlobalMouseListener();
     }
 
@@ -299,6 +303,8 @@ struct Viewport::DragToScrollListener   : private MouseListener,
     MouseInputSource scrollSource = Desktop::getInstance().getMainMouseSource();
     bool isDragging = false;
     bool isGlobalMouseListener = false;
+    int numTouches = 0;
+    bool allowXDrag = true, allowYDrag = true;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DragToScrollListener)
 };
@@ -322,6 +328,16 @@ bool Viewport::isScrollOnDragEnabled() const noexcept
 bool Viewport::isCurrentlyScrollingOnDrag() const noexcept
 {
     return dragToScrollListener != nullptr && dragToScrollListener->isDragging;
+}
+
+void Viewport::setAllowVerticalDrag(bool allow)
+{
+    dragToScrollListener->allowYDrag = allow;
+}
+    
+void Viewport::setAllowHorizontalDrag(bool allow)
+{
+    dragToScrollListener->allowXDrag = allow;
 }
 
 //==============================================================================
