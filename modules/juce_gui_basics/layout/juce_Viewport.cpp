@@ -222,7 +222,7 @@ struct Viewport::DragToScrollListener   : private MouseListener,
                                                                 (int) offsetY.getPosition()));
     }
 
-    void mouseDown (const MouseEvent&) override
+    void mouseDown (const MouseEvent& e) override
     {
         if (! isGlobalMouseListener)
         {
@@ -235,12 +235,15 @@ struct Viewport::DragToScrollListener   : private MouseListener,
             Desktop::getInstance().addGlobalMouseListener (this);
 
             isGlobalMouseListener = true;
+
+            scrollSource = e.source;
         }
     }
 
     void mouseDrag (const MouseEvent& e) override
     {
-        if (Desktop::getInstance().getNumDraggingMouseSources() == 1 && ! doesMouseEventComponentBlockViewportDrag (e.eventComponent))
+        if (e.source == scrollSource
+            && ! doesMouseEventComponentBlockViewportDrag (e.eventComponent))
         {
             auto totalOffset = e.getOffsetFromDragStart().toFloat();
 
@@ -257,18 +260,15 @@ struct Viewport::DragToScrollListener   : private MouseListener,
 
             if (isDragging)
             {
-                if (allowXDrag)
-                    offsetX.drag (totalOffset.x);
-                
-                if (allowYDrag)
-                    offsetY.drag (totalOffset.y);
+                offsetX.drag (totalOffset.x);
+                offsetY.drag (totalOffset.y);
             }
         }
     }
 
-    void mouseUp (const MouseEvent&) override
+    void mouseUp (const MouseEvent& e) override
     {
-        if (isGlobalMouseListener && Desktop::getInstance().getNumDraggingMouseSources() == 0)
+        if (isGlobalMouseListener && e.source == scrollSource)
             endDragAndClearGlobalMouseListener();
     }
 
@@ -296,10 +296,8 @@ struct Viewport::DragToScrollListener   : private MouseListener,
     Viewport& viewport;
     ViewportDragPosition offsetX, offsetY;
     Point<int> originalViewPos;
-
-    int numTouches = 0;
+    MouseInputSource scrollSource = Desktop::getInstance().getMainMouseSource();
     bool isDragging = false;
-    bool allowXDrag = true, allowYDrag = true;
     bool isGlobalMouseListener = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DragToScrollListener)
@@ -326,16 +324,6 @@ bool Viewport::isCurrentlyScrollingOnDrag() const noexcept
     return dragToScrollListener != nullptr && dragToScrollListener->isDragging;
 }
 
-void Viewport::setAllowVerticalDrag(bool allow)
-{
-    dragToScrollListener->allowYDrag = allow;
-}
-    
-void Viewport::setAllowHorizontalDrag(bool allow)
-{
-    dragToScrollListener->allowXDrag = allow;
-}
-    
 //==============================================================================
 void Viewport::lookAndFeelChanged()
 {

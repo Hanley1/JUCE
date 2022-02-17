@@ -37,12 +37,6 @@ namespace juce
     Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 }
 
-//#import<DropboxSDK/DropboxSDK.h>
-
-#ifndef IS_PRIMER
-#import <ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h>
-#endif
-
 #if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 @interface JuceAppStartupDelegate : NSObject <UIApplicationDelegate, UNUserNotificationCenterDelegate>
 #else
@@ -53,11 +47,9 @@ namespace juce
 }
 
 @property (strong, nonatomic) UIWindow *window;
-- (id)init;
+- (id) init;
 - (void) dealloc;
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions ;
-//- (void) applicationDidFinishLaunching: (UIApplication*) application;
-- (BOOL) application:(UIApplication*)app openURL:(NSURL*)url sourceApplication:(NSString*)source annotation:(id)annotation;
+- (void) applicationDidFinishLaunching: (UIApplication*) application;
 - (void) applicationWillTerminate: (UIApplication*) application;
 - (void) applicationDidEnterBackground: (UIApplication*) application;
 - (void) applicationWillEnterForeground: (UIApplication*) application;
@@ -100,11 +92,11 @@ namespace juce
 {
     self = [super init];
     appSuspendTask = UIBackgroundTaskInvalid;
-    
-#if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+
+   #if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
     [UNUserNotificationCenter currentNotificationCenter].delegate = self;
-#endif
-    
+   #endif
+
     return self;
 }
 
@@ -113,60 +105,13 @@ namespace juce
     [super dealloc];
 }
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    
-#ifndef IS_PRIMER
-#if SPANISH
-    [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
-#else
-    [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
-#endif
-#endif
-
-    NSObject* _pushNotificationsDelegate;
-
+- (void) applicationDidFinishLaunching: (UIApplication*) application
+{
     ignoreUnused (application);
     initialiseJuce_GUI();
 
     if (auto* app = JUCEApplicationBase::createInstance())
     {
-        NSError* error = nil;
-        
-        // exclude Application Support/Resources folder from backup.
-        
-        NSURL *applicationSupportDirectory = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
-                                                                                    inDomain:NSUserDomainMask
-                                                                           appropriateForURL:nil
-                                                                                      create:YES
-                                                                                       error:&error];
-        if (error)
-            NSLog(@"KCDM: Could not create application support directory. %@", error);
-        
-        NSURL *resourcesFolder = [applicationSupportDirectory URLByAppendingPathComponent:@"Resources" isDirectory:YES];
-        
-        if (![[NSFileManager defaultManager] createDirectoryAtPath:[resourcesFolder path]
-                                       withIntermediateDirectories:YES
-                                                        attributes:nil
-                                                             error:&error])
-        {
-            NSLog(@"KCDM: Error creating Resources folder: %@", error);
-        }
-        
-        BOOL success = [resourcesFolder setResourceValue:@YES forKey: NSURLIsExcludedFromBackupKey error: &error];
-        
-        if (!success)
-            NSLog(@"KCDM: Error excluding %@ from backup %@", resourcesFolder, error);
-        
-        // register to observe notifications from the icloud key-value store
-        [[NSNotificationCenter defaultCenter]
-            addObserver: self
-            selector: @selector (handleChangesFromiCloud:)
-            name: NSUbiquitousKeyValueStoreDidChangeExternallyNotification
-            object: [NSUbiquitousKeyValueStore defaultStore]];
-        
-        // get changes that might have happened while this instance of your app wasn't running
-        [[NSUbiquitousKeyValueStore defaultStore] synchronize];
-        
         if (! app->initialiseApp())
             exit (app->shutdownApp());
     }
@@ -174,106 +119,7 @@ namespace juce
     {
         jassertfalse; // you must supply an application object for an iOS app!
     }
-    
-    return YES;
 }
-
-- (void) handleChangesFromiCloud: (NSNotification *) notification
-{
-    NSDictionary * userInfo = [notification userInfo];
-    NSInteger reason = [[userInfo objectForKey:NSUbiquitousKeyValueStoreChangeReasonKey] integerValue];
-    // 4 reasons:
-    switch (reason) {
-        case NSUbiquitousKeyValueStoreServerChange:
-            // Updated values
-            break;
-        case NSUbiquitousKeyValueStoreInitialSyncChange:
-            // First launch
-            break;
-        case NSUbiquitousKeyValueStoreQuotaViolationChange:
-            // No free space
-            break;
-        case NSUbiquitousKeyValueStoreAccountChange:
-            // iCloud account changed
-            break;
-        default:
-            break;
-    }
-    
-    NSArray * keys = [userInfo objectForKey:NSUbiquitousKeyValueStoreChangedKeysKey];
-    for (NSString * key in keys)
-    {
-//        NSLog(@"Value for key %@ changed", key);
-    }
-}
-
-//- (void) applicationDidFinishLaunching: (UIApplication*) application
-//{
-//    ignoreUnused (application);
-//    initialiseJuce_GUI();
-//
-//    if (JUCEApplicationBase* app = JUCEApplicationBase::createInstance())
-//    {
-//        NSError* error = nil;
-//        
-//        // exclude Application Support/Resources folder from backup.
-//        
-//        NSURL *applicationSupportDirectory = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
-//                                                                                    inDomain:NSUserDomainMask
-//                                                                           appropriateForURL:nil
-//                                                                                      create:YES
-//                                                                                       error:&error];
-//        if (error)
-//            NSLog(@"KCDM: Could not create application support directory. %@", error);
-//        
-//        NSURL *resourcesFolder = [applicationSupportDirectory URLByAppendingPathComponent:@"Resources" isDirectory:YES];
-//        
-//        if (![[NSFileManager defaultManager] createDirectoryAtPath:[resourcesFolder path]
-//                                       withIntermediateDirectories:YES
-//                                                        attributes:nil
-//                                                             error:&error])
-//        {
-//            NSLog(@"KCDM: Error creating Resources folder: %@", error);
-//        }
-//        
-//        BOOL success = [resourcesFolder setResourceValue:@YES forKey: NSURLIsExcludedFromBackupKey error: &error];
-//        
-//        if (!success)
-//            NSLog(@"KCDM: Error excluding %@ from backup %@", resourcesFolder, error);
-//        
-//        if (! app->initialiseApp())
-//            exit (app->shutdownApp());
-//    }
-//    else
-//    {
-//        jassertfalse; // you must supply an application object for an iOS app!
-//    }
-//}
-
-- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url
-            options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-    
-#ifndef IS_PRIMER
-    DBOAuthResult *authResult = [DBClientsManager handleRedirectURL:url];
-    if (authResult != nil) {
-        if ([authResult isSuccess]) {
-            NSLog(@"Success! User is logged into Dropbox.");
-        } else if ([authResult isCancel]) {
-            NSLog(@"Authorization flow was manually canceled by user!");
-        } else if ([authResult isError]) {
-            NSLog(@"Error: %@", authResult);
-        }
-    }
-    return NO;
-#endif
-}
-
-//- (BOOL)application:(UIApplication*)app openURL:(NSURL*)url
-//  sourceApplication:(NSString*)source annotation:(id)annotation
-//{
-//    [[DBSession sharedSession] handleOpenURL:url];
-//    return YES;
-//}
 
 - (void) applicationWillTerminate: (UIApplication*) application
 {
@@ -577,6 +423,7 @@ int juce_iOSMain (int argc, const char* argv[], void* customDelegatePtr);
 int juce_iOSMain (int argc, const char* argv[], void* customDelegatePtr)
 {
     Class delegateClass = (customDelegatePtr != nullptr ? reinterpret_cast<Class> (customDelegatePtr) : [JuceAppStartupDelegate class]);
+
     return UIApplicationMain (argc, const_cast<char**> (argv), nil, NSStringFromClass (delegateClass));
 }
 
@@ -590,8 +437,11 @@ void LookAndFeel::playAlertSound()
 class iOSMessageBox
 {
 public:
-    iOSMessageBox (const MessageBoxOptions& opts, std::unique_ptr<ModalComponentManager::Callback>&& cb)
-        : callback (std::move (cb))
+    iOSMessageBox (const MessageBoxOptions& opts,
+                   std::unique_ptr<ModalComponentManager::Callback>&& cb,
+                   bool deleteOnCompletion)
+        : callback (std::move (cb)),
+          shouldDeleteThis (deleteOnCompletion)
     {
         if (currentlyFocusedPeer != nullptr)
         {
@@ -633,10 +483,10 @@ public:
         result = buttonIndex;
 
         if (callback != nullptr)
-        {
             callback->modalStateFinished (result);
+
+        if (shouldDeleteThis)
             delete this;
-        }
     }
 
 private:
@@ -654,6 +504,7 @@ private:
 
     int result = -1;
     std::unique_ptr<ModalComponentManager::Callback> callback;
+    const bool shouldDeleteThis;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (iOSMessageBox)
 };
@@ -670,13 +521,24 @@ static int showDialog (const MessageBoxOptions& options,
         {
             jassert (mapFn != nullptr);
 
-            iOSMessageBox messageBox (options, nullptr);
+            iOSMessageBox messageBox (options, nullptr, false);
             return mapFn (messageBox.getResult());
         }
     }
    #endif
 
-    new iOSMessageBox (options, AlertWindowMappings::getWrappedCallback (callbackIn, mapFn));
+    const auto showBox = [options, callbackIn, mapFn]
+    {
+        new iOSMessageBox (options,
+                           AlertWindowMappings::getWrappedCallback (callbackIn, mapFn),
+                           true);
+    };
+
+    if (MessageManager::getInstance()->isThisTheMessageThread())
+        showBox();
+    else
+        MessageManager::callAsync (showBox);
+
     return 0;
 }
 
@@ -811,7 +673,7 @@ void SystemClipboard::copyTextToClipboard (const String& text)
 
 String SystemClipboard::getTextFromClipboard()
 {
-    return nsStringToJuce ([[UIPasteboard generalPasteboard] valueForPasteboardType: @"public.text"]);
+    return nsStringToJuce ([[UIPasteboard generalPasteboard] string]);
 }
 
 //==============================================================================
@@ -829,6 +691,77 @@ bool MouseInputSource::SourceList::canUseTouch()
 bool Desktop::canUseSemiTransparentWindows() noexcept
 {
     return true;
+}
+
+bool Desktop::isDarkModeActive() const
+{
+   #if defined (__IPHONE_12_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_12_0
+    if (@available (iOS 12.0, *))
+        return [[[UIScreen mainScreen] traitCollection] userInterfaceStyle] == UIUserInterfaceStyleDark;
+   #endif
+
+    return false;
+}
+
+class Desktop::NativeDarkModeChangeDetectorImpl
+{
+public:
+    NativeDarkModeChangeDetectorImpl()
+    {
+        static DelegateClass delegateClass;
+
+        delegate = [delegateClass.createInstance() init];
+        object_setInstanceVariable (delegate, "owner", this);
+
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
+        [[NSNotificationCenter defaultCenter] addObserver: delegate
+                                                 selector: @selector (darkModeChanged:)
+                                                     name: UIViewComponentPeer::getDarkModeNotificationName()
+                                                   object: nil];
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+    }
+
+    ~NativeDarkModeChangeDetectorImpl()
+    {
+        object_setInstanceVariable (delegate, "owner", nullptr);
+        [[NSNotificationCenter defaultCenter] removeObserver: delegate];
+        [delegate release];
+    }
+
+    void darkModeChanged()
+    {
+        Desktop::getInstance().darkModeChanged();
+    }
+
+private:
+    struct DelegateClass  : public ObjCClass<NSObject>
+    {
+        DelegateClass()  : ObjCClass<NSObject> ("JUCEDelegate_")
+        {
+            addIvar<NativeDarkModeChangeDetectorImpl*> ("owner");
+
+            JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
+            addMethod (@selector (darkModeChanged:), darkModeChanged);
+            JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+
+            registerClass();
+        }
+
+        static void darkModeChanged (id self, SEL, NSNotification*)
+        {
+            if (auto* owner = getIvar<NativeDarkModeChangeDetectorImpl*> (self, "owner"))
+                owner->darkModeChanged();
+        }
+    };
+
+    id delegate = nil;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NativeDarkModeChangeDetectorImpl)
+};
+
+std::unique_ptr<Desktop::NativeDarkModeChangeDetectorImpl> Desktop::createNativeDarkModeChangeDetectorImpl()
+{
+    return std::make_unique<NativeDarkModeChangeDetectorImpl>();
 }
 
 Point<float> MouseInputSource::getCurrentRawMousePosition()
@@ -869,19 +802,25 @@ static Rectangle<int> getRecommendedWindowBounds()
 
 static BorderSize<int> getSafeAreaInsets (float masterScale)
 {
-   #if defined (__IPHONE_11_0) && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_11_0
-    UIEdgeInsets safeInsets = TemporaryWindow().window.safeAreaInsets;
+   #if defined (__IPHONE_11_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_11_0
+    if (@available (iOS 11.0, *))
+    {
+        UIEdgeInsets safeInsets = TemporaryWindow().window.safeAreaInsets;
 
-    auto getInset = [&] (CGFloat original) { return roundToInt (original / masterScale); };
+        auto getInset = [&] (CGFloat original) { return roundToInt (original / masterScale); };
 
-    return { getInset (safeInsets.top),    getInset (safeInsets.left),
-             getInset (safeInsets.bottom), getInset (safeInsets.right) };
-   #else
+        return { getInset (safeInsets.top),    getInset (safeInsets.left),
+                 getInset (safeInsets.bottom), getInset (safeInsets.right) };
+    }
+   #endif
+
+    JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wdeprecated-declarations")
     auto statusBarSize = [UIApplication sharedApplication].statusBarFrame.size;
+    JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+
     auto statusBarHeight = jmin (statusBarSize.width, statusBarSize.height);
 
     return { roundToInt (statusBarHeight / masterScale), 0, 0, 0 };
-   #endif
 }
 
 void Displays::findDisplays (float masterScale)

@@ -260,10 +260,9 @@ public:
         @param defaultReturnValue   a value to return if the element doesn't have an attribute
                                     with this name
         @see setAttribute
-    */
+
+     */
     int getIntAttribute (StringRef attributeName, int defaultReturnValue = 0) const;
-    
-    int64 getInt64Attribute (StringRef attributeName, int64 defaultReturnValue = 0) const;
 
     /** Returns the value of a named attribute as floating-point.
 
@@ -734,32 +733,30 @@ public:
         return Iterator<GetNextElementWithTagName> { getChildByName (name), name };
     }
 
-    /** This allows us to trigger a warning inside deprecated macros. */
    #ifndef DOXYGEN
-    JUCE_DEPRECATED_WITH_BODY (void macroBasedForLoop() const noexcept, {})
+    [[deprecated]] void macroBasedForLoop() const noexcept {}
+
+    [[deprecated ("This has been deprecated in favour of the toString method.")]]
+    String createDocument (StringRef dtdToUse,
+                           bool allOnOneLine = false,
+                           bool includeXmlHeader = true,
+                           StringRef encodingType = "UTF-8",
+                           int lineWrapLength = 60) const;
+
+    [[deprecated ("This has been deprecated in favour of the writeTo method.")]]
+    void writeToStream (OutputStream& output,
+                        StringRef dtdToUse,
+                        bool allOnOneLine = false,
+                        bool includeXmlHeader = true,
+                        StringRef encodingType = "UTF-8",
+                        int lineWrapLength = 60) const;
+
+    [[deprecated ("This has been deprecated in favour of the writeTo method.")]]
+    bool writeToFile (const File& destinationFile,
+                      StringRef dtdToUse,
+                      StringRef encodingType = "UTF-8",
+                      int lineWrapLength = 60) const;
    #endif
-
-    //==============================================================================
-    /** This has been deprecated in favour of the toString() method. */
-    JUCE_DEPRECATED (String createDocument (StringRef dtdToUse,
-                                            bool allOnOneLine = false,
-                                            bool includeXmlHeader = true,
-                                            StringRef encodingType = "UTF-8",
-                                            int lineWrapLength = 60) const);
-
-    /** This has been deprecated in favour of the writeTo() method. */
-    JUCE_DEPRECATED (void writeToStream (OutputStream& output,
-                                         StringRef dtdToUse,
-                                         bool allOnOneLine = false,
-                                         bool includeXmlHeader = true,
-                                         StringRef encodingType = "UTF-8",
-                                         int lineWrapLength = 60) const);
-
-    /** This has been deprecated in favour of the writeTo() method. */
-    JUCE_DEPRECATED (bool writeToFile (const File& destinationFile,
-                                       StringRef dtdToUse,
-                                       StringRef encodingType = "UTF-8",
-                                       int lineWrapLength = 60) const);
 
 private:
     //==============================================================================
@@ -803,6 +800,8 @@ private:
 };
 
 //==============================================================================
+#ifndef DOXYGEN
+
 /** DEPRECATED: A handy macro to make it easy to iterate all the child elements in an XmlElement.
 
     New code should avoid this macro, and instead use getChildIterator directly.
@@ -853,5 +852,7 @@ private:
 */
 #define forEachXmlChildElementWithTagName(parentXmlElement, childElementVariableName, requiredTagName) \
     for (auto* (childElementVariableName) : ((parentXmlElement).macroBasedForLoop(), (parentXmlElement).getChildWithTagNameIterator ((requiredTagName))))
+
+#endif
 
 } // namespace juce

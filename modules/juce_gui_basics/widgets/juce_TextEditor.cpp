@@ -660,7 +660,7 @@ struct TextEditor::Iterator
         auto startX = indexToX (range.getStart());
         auto endX   = indexToX (range.getEnd());
 
-        return Rectangle<float> (startX, lineY, endX - startX, lineHeight * lineSpacing).toNearestInt();
+        return Rectangle<float> (startX, lineY, endX - startX, lineHeight * lineSpacing).getSmallestIntegerContainer();
     }
 
     //==============================================================================
@@ -917,8 +917,6 @@ namespace TextEditorDefs
                     ? 2 : (CharacterFunctions::isWhitespace (character) ? 0 : 1);
     }
 }
-
-bool TextEditor::virtualKeyboardIsShowing = false;
 
 //==============================================================================
 TextEditor::TextEditor (const String& name, juce_wchar passwordChar)
@@ -1838,6 +1836,9 @@ void TextEditor::mouseDown (const MouseEvent& e)
         {
             moveCaretTo (getTextIndexAt (e.x, e.y),
                          e.mods.isShiftDown());
+
+            if (auto* peer = getPeer())
+                peer->dismissPendingTextInput();
         }
         else
         {
@@ -1958,6 +1959,10 @@ bool TextEditor::moveCaretWithTransaction (const int newPos, const bool selectin
 {
     newTransaction();
     moveCaretTo (newPos, selecting);
+
+    if (auto* peer = getPeer())
+        peer->dismissPendingTextInput();
+
     return true;
 }
 
