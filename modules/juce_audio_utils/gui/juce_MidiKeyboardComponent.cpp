@@ -196,6 +196,7 @@ void MidiKeyboardComponent::repaintNote (int noteNum)
 void MidiKeyboardComponent::mouseMove (const MouseEvent& e)
 {
     updateNoteUnderMouse (e, false);
+    shouldCheckMousePos = false;
 }
 
 void MidiKeyboardComponent::mouseDrag (const MouseEvent& e)
@@ -211,12 +212,16 @@ void MidiKeyboardComponent::mouseDown (const MouseEvent& e)
     auto newNote = getNoteAndVelocityAtPosition (e.position).note;
 
     if (newNote >= 0 && mouseDownOnKey (newNote, e))
+    {
         updateNoteUnderMouse (e, true);
+        shouldCheckMousePos = true;
+    }
 }
 
 void MidiKeyboardComponent::mouseUp (const MouseEvent& e)
 {
     updateNoteUnderMouse (e, false);
+    shouldCheckMousePos = false;
 
     auto note = getNoteAndVelocityAtPosition (e.position).note;
 
@@ -248,6 +253,13 @@ void MidiKeyboardComponent::timerCallback()
             keysCurrentlyDrawnDown.setBit (i, isOn);
             repaintNote (i);
         }
+    }
+    
+    if (shouldCheckMousePos)
+    {
+        for (auto& ms : Desktop::getInstance().getMouseSources())
+            if (ms.getComponentUnderMouse() == this || isParentOf (ms.getComponentUnderMouse()))
+                updateNoteUnderMouse (getLocalPoint (nullptr, ms.getScreenPosition()), ms.isDragging(), ms.getIndex());
     }
 }
 

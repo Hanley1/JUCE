@@ -243,6 +243,10 @@ public:
     void colourChanged() override;
     
     void handleNoteOn  (MidiKeyboardState*, int, int, float) override;
+    
+#if JUCE_IOS
+    void disableMousePosCheck() {shouldCheckMousePos = false;}
+#endif
 
 private:
     //==============================================================================
@@ -264,7 +268,7 @@ private:
     int keyMappingOctave = 6;
 
     float velocity = 1.0f;
-    bool useMousePositionForVelocity = true;
+    bool useMousePositionForVelocity = true, shouldCheckMousePos = false;
 
     Array<int> mouseOverNotes, mouseDownNotes;
     Array<KeyPress> keyPresses;
