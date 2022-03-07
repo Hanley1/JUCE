@@ -264,14 +264,16 @@ public:
     void resized() override;
     /** @internal */
     void mouseWheelMove (const MouseEvent&, const MouseWheelDetails&) override;
-
+    
+    void setLowestVisibleKeyFloat (float noteNumber);
+    
 private:
     //==============================================================================
     struct UpDownButton;
 
     Range<float> getKeyPos (int midiNoteNumber) const;
     NoteAndVelocity remappedXYToNote (Point<float>) const;
-    void setLowestVisibleKeyFloat (float noteNumber);
+    
 
     //==============================================================================
     Orientation orientation;
