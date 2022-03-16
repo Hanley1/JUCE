@@ -254,17 +254,20 @@ namespace juce
             options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
     
 #ifndef IS_PRIMER
-    DBOAuthResult *authResult = [DBClientsManager handleRedirectURL:url];
-    if (authResult != nil) {
-        if ([authResult isSuccess]) {
-            NSLog(@"Success! User is logged into Dropbox.");
-        } else if ([authResult isCancel]) {
-            NSLog(@"Authorization flow was manually canceled by user!");
-        } else if ([authResult isError]) {
-            NSLog(@"Error: %@", authResult);
-        }
-    }
-    return NO;
+    
+    DBOAuthCompletion completion = ^(DBOAuthResult *authResult) {
+       if (authResult != nil) {
+         if ([authResult isSuccess]) {
+           NSLog(@"\n\nSuccess! User is logged into Dropbox.\n\n");
+         } else if ([authResult isCancel]) {
+           NSLog(@"\n\nAuthorization flow was manually canceled by user!\n\n");
+         } else if ([authResult isError]) {
+           NSLog(@"\n\nError: %@\n\n", authResult);
+         }
+       }
+     };
+     BOOL canHandle = [DBClientsManager handleRedirectURL:url completion:completion];
+     return canHandle;
 #endif
 }
 
