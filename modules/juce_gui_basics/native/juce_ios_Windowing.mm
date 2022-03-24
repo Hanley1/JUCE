@@ -37,6 +37,10 @@ namespace juce
     Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 }
 
+#ifndef IS_PRIMER
+#import <ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h>
+#endif
+
 #if JUCE_PUSH_NOTIFICATIONS && defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 @interface JuceAppStartupDelegate : NSObject <UIApplicationDelegate, UNUserNotificationCenterDelegate>
 #else
@@ -49,7 +53,8 @@ namespace juce
 @property (strong, nonatomic) UIWindow *window;
 - (id) init;
 - (void) dealloc;
-- (void) applicationDidFinishLaunching: (UIApplication*) application;
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions ;
+//- (void) applicationDidFinishLaunching: (UIApplication*) application;
 - (void) applicationWillTerminate: (UIApplication*) application;
 - (void) applicationDidEnterBackground: (UIApplication*) application;
 - (void) applicationWillEnterForeground: (UIApplication*) application;
@@ -105,13 +110,60 @@ namespace juce
     [super dealloc];
 }
 
-- (void) applicationDidFinishLaunching: (UIApplication*) application
-{
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    
+#ifndef IS_PRIMER
+#if SPANISH
+    [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
+#else
+    [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
+#endif
+#endif
+
+    NSObject* _pushNotificationsDelegate;
+
     ignoreUnused (application);
     initialiseJuce_GUI();
 
     if (auto* app = JUCEApplicationBase::createInstance())
     {
+        NSError* error = nil;
+        
+        // exclude Application Support/Resources folder from backup.
+        
+        NSURL *applicationSupportDirectory = [[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory
+                                                                                    inDomain:NSUserDomainMask
+                                                                           appropriateForURL:nil
+                                                                                      create:YES
+                                                                                       error:&error];
+        if (error)
+            NSLog(@"KCDM: Could not create application support directory. %@", error);
+        
+        NSURL *resourcesFolder = [applicationSupportDirectory URLByAppendingPathComponent:@"Resources" isDirectory:YES];
+        
+        if (![[NSFileManager defaultManager] createDirectoryAtPath:[resourcesFolder path]
+                                       withIntermediateDirectories:YES
+                                                        attributes:nil
+                                                             error:&error])
+        {
+            NSLog(@"KCDM: Error creating Resources folder: %@", error);
+        }
+        
+        BOOL success = [resourcesFolder setResourceValue:@YES forKey: NSURLIsExcludedFromBackupKey error: &error];
+        
+        if (!success)
+            NSLog(@"KCDM: Error excluding %@ from backup %@", resourcesFolder, error);
+        
+        // register to observe notifications from the icloud key-value store
+        [[NSNotificationCenter defaultCenter]
+            addObserver: self
+            selector: @selector (handleChangesFromiCloud:)
+            name: NSUbiquitousKeyValueStoreDidChangeExternallyNotification
+            object: [NSUbiquitousKeyValueStore defaultStore]];
+        
+        // get changes that might have happened while this instance of your app wasn't running
+        [[NSUbiquitousKeyValueStore defaultStore] synchronize];
+        
         if (! app->initialiseApp())
             exit (app->shutdownApp());
     }
@@ -119,7 +171,54 @@ namespace juce
     {
         jassertfalse; // you must supply an application object for an iOS app!
     }
+    
+    return YES;
 }
+
+- (void) handleChangesFromiCloud: (NSNotification *) notification
+{
+    NSDictionary * userInfo = [notification userInfo];
+    NSInteger reason = [[userInfo objectForKey:NSUbiquitousKeyValueStoreChangeReasonKey] integerValue];
+    // 4 reasons:
+    switch (reason) {
+        case NSUbiquitousKeyValueStoreServerChange:
+            // Updated values
+            break;
+        case NSUbiquitousKeyValueStoreInitialSyncChange:
+            // First launch
+            break;
+        case NSUbiquitousKeyValueStoreQuotaViolationChange:
+            // No free space
+            break;
+        case NSUbiquitousKeyValueStoreAccountChange:
+            // iCloud account changed
+            break;
+        default:
+            break;
+    }
+    
+    NSArray * keys = [userInfo objectForKey:NSUbiquitousKeyValueStoreChangedKeysKey];
+    for (NSString * key in keys)
+    {
+//        NSLog(@"Value for key %@ changed", key);
+    }
+}
+
+//- (void) applicationDidFinishLaunching: (UIApplication*) application
+//{
+//    ignoreUnused (application);
+//    initialiseJuce_GUI();
+//
+//    if (auto* app = JUCEApplicationBase::createInstance())
+//    {
+//        if (! app->initialiseApp())
+//            exit (app->shutdownApp());
+//    }
+//    else
+//    {
+//        jassertfalse; // you must supply an application object for an iOS app!
+//    }
+//}
 
 - (void) applicationWillTerminate: (UIApplication*) application
 {
