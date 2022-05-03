@@ -85,9 +85,10 @@ void ComponentBoundsConstrainer::setMinimumOnscreenAmounts (int minimumWhenOffTh
     minOffRight  = minimumWhenOffTheRight;
 }
 
-void ComponentBoundsConstrainer::setFixedAspectRatio (double widthOverHeight) noexcept
+void ComponentBoundsConstrainer::setFixedAspectRatio (double widthOverHeight, double aspectRatioHeightOffset_) noexcept
 {
     aspectRatio = jmax (0.0, widthOverHeight);
+    aspectRatioHeightOffset = aspectRatioHeightOffset_;
 }
 
 double ComponentBoundsConstrainer::getFixedAspectRatio() const noexcept
@@ -234,6 +235,7 @@ void ComponentBoundsConstrainer::checkBounds (Rectangle<int>& bounds,
     if (aspectRatio > 0.0)
     {
         bool adjustWidth;
+        double heightWithOffset = bounds.getHeight() - aspectRatioHeightOffset;
 
         if ((isStretchingTop || isStretchingBottom) && ! (isStretchingLeft || isStretchingRight))
         {
@@ -245,29 +247,29 @@ void ComponentBoundsConstrainer::checkBounds (Rectangle<int>& bounds,
         }
         else
         {
-            const double oldRatio = (old.getHeight() > 0) ? std::abs (old.getWidth() / (double) old.getHeight()) : 0.0;
-            const double newRatio = std::abs (bounds.getWidth() / (double) bounds.getHeight());
+            const double oldRatio = (old.getHeight() - aspectRatioHeightOffset > 0) ? std::abs (old.getWidth() / (double) (old.getHeight() - aspectRatioHeightOffset)) : 0.0;
+            const double newRatio = std::abs (bounds.getWidth() / (double) heightWithOffset);
 
             adjustWidth = (oldRatio > newRatio);
         }
 
         if (adjustWidth)
         {
-            bounds.setWidth (roundToInt (bounds.getHeight() * aspectRatio));
+            bounds.setWidth (roundToInt (heightWithOffset * aspectRatio));
 
             if (bounds.getWidth() > maxW || bounds.getWidth() < minW)
             {
                 bounds.setWidth (jlimit (minW, maxW, bounds.getWidth()));
-                bounds.setHeight (roundToInt (bounds.getWidth() / aspectRatio));
+                bounds.setHeight (roundToInt (bounds.getWidth() / aspectRatio) + aspectRatioHeightOffset);
             }
         }
         else
         {
-            bounds.setHeight (roundToInt (bounds.getWidth() / aspectRatio));
+            bounds.setHeight (roundToInt (bounds.getWidth() / aspectRatio) + aspectRatioHeightOffset);
 
             if (bounds.getHeight() > maxH || bounds.getHeight() < minH)
             {
-                bounds.setHeight (jlimit (minH, maxH, bounds.getHeight()));
+                bounds.setHeight (jlimit (minH, maxH, (int)(bounds.getHeight() + aspectRatioHeightOffset)));
                 bounds.setWidth (roundToInt (bounds.getHeight() * aspectRatio));
             }
         }
