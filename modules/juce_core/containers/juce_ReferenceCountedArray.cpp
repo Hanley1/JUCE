@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2018 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -84,12 +84,7 @@ public:
             expectEquals (derivedObject->getReferenceCount(), 1);
 
             baseArray.add (baseObjectPtr);
-
-           #if JUCE_STRICT_REFCOUNTEDPOINTER
-            baseArray.add (derivedObjectPtr);
-           #else
             baseArray.add (derivedObjectPtr.get());
-           #endif
 
             for (auto o : baseArray)
                 expectEquals (o->getReferenceCount(), 2);
@@ -163,7 +158,9 @@ private:
             {
                 parent.expect (o != nullptr);
                 parent.expect (o != this);
-                parent.expectEquals (o->data, 374);
+
+                if (o != nullptr)
+                    parent.expectEquals (o->data, 374);
             }
         }
 

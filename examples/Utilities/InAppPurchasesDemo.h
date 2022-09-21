@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -38,6 +38,7 @@
  exporters:        xcode_mac, xcode_iphone, androidstudio
 
  moduleFlags:      JUCE_STRICT_REFCOUNTEDPOINTER=1
+                   JUCE_IN_APP_PURCHASES=1
 
  type:             Component
  mainClass:        InAppPurchasesDemo
@@ -51,6 +52,19 @@
 #pragma once
 
 #include "../Assets/DemoUtilities.h"
+
+/*
+    To finish the setup of this demo, do the following in the Projucer project:
+
+    1. In the project settings, set the "Bundle Identifier" to com.rmsl.juceInAppPurchaseSample
+    2. In the Android exporter settings, change the following settings:
+         - "In-App Billing" - Enabled
+         - "Key Signing: key.store" - path to InAppPurchase.keystore file in examples/Assets/Signing
+         - "Key Signing: key.store.password" - amazingvoices
+         - "Key Signing: key-alias" - InAppPurchase
+         - "Key Signing: key.alias.password" - amazingvoices
+    3. Re-save the project
+*/
 
 //==============================================================================
 class VoicePurchases      : private InAppPurchases::Listener
@@ -78,7 +92,7 @@ public:
                           VoiceProduct {"jb",     "JB",     false,  false, false, "Retrieving price..." } });
     }
 
-    ~VoicePurchases()
+    ~VoicePurchases() override
     {
         InAppPurchases::getInstance()->removeListener (this);
     }
@@ -108,7 +122,7 @@ public:
                 purchaseInProgress = true;
 
                 product.purchaseInProgress = true;
-                InAppPurchases::getInstance()->purchaseProduct (product.identifier, false);
+                InAppPurchases::getInstance()->purchaseProduct (product.identifier);
 
                 guiUpdater.triggerAsyncUpdate();
             }
@@ -142,7 +156,7 @@ private:
                 voiceProduct.purchasePrice = "In-App purchases unavailable";
             }
 
-            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+            AlertWindow::showMessageBoxAsync (MessageBoxIconType::WarningIcon,
                                               "In-app purchase is unavailable!",
                                               "In-App purchases are not available. This either means you are trying "
                                               "to use IAP on a platform that does not support IAP or you haven't setup "
@@ -164,7 +178,7 @@ private:
                 }
             }
 
-            AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+            AlertWindow::showMessageBoxAsync (MessageBoxIconType::WarningIcon,
                                               "Your credit card will be charged!",
                                               "You are running the sample code for JUCE In-App purchases. "
                                               "Although this is only sample code, it will still CHARGE YOUR CREDIT CARD!",
@@ -261,7 +275,7 @@ public:
         Rectangle<int> r (0, 0, w, h);
 
         auto& lf = Desktop::getInstance().getDefaultLookAndFeel();
-        g.setColour (lf.findColour (isSelected ? TextEditor::highlightColourId : ListBox::backgroundColourId));
+        g.setColour (lf.findColour (isSelected ? (int) TextEditor::highlightColourId : (int) ListBox::backgroundColourId));
         g.fillRect (r);
 
         g.setColour (lf.findColour (ListBox::textColourId));
@@ -382,11 +396,8 @@ public:
 
                 setInterceptsMouseClicks (! hasBeenPurchased, ! hasBeenPurchased);
 
-                if (auto* assetStream = createAssetInputStream (String ("Purchases/" + String (imageResourceName)).toRawUTF8()))
-                {
-                    std::unique_ptr<InputStream> fileStream (assetStream);
+                if (auto fileStream = createAssetInputStream (String ("Purchases/" + String (imageResourceName)).toRawUTF8()))
                     avatar = PNGImageFormat().decodeImage (*fileStream);
-                }
             }
         }
     private:
@@ -431,15 +442,17 @@ public:
 
     Component* refreshComponentForRow (int row, bool selected, Component* existing) override
     {
+        auto safePtr = rawToUniquePtr (existing);
+
         if (isPositiveAndBelow (row, voiceProducts.size()))
         {
-            if (existing == nullptr)
-                existing = new VoiceRow (purchases);
+            if (safePtr == nullptr)
+                safePtr = std::make_unique<VoiceRow> (purchases);
 
-            if (auto* voiceRow = dynamic_cast<VoiceRow*> (existing))
+            if (auto* voiceRow = dynamic_cast<VoiceRow*> (safePtr.get()))
                 voiceRow->update (row, selected);
 
-            return existing;
+            return safePtr.release();
         }
 
         return nullptr;
@@ -450,7 +463,7 @@ public:
         auto r = Rectangle<int> (0, 0, w, h).reduced (4);
 
         auto& lf = Desktop::getInstance().getDefaultLookAndFeel();
-        g.setColour (lf.findColour (isSelected ? TextEditor::highlightColourId : ListBox::backgroundColourId));
+        g.setColour (lf.findColour (isSelected ? (int) TextEditor::highlightColourId : (int) ListBox::backgroundColourId));
         g.fillRect (r);
     }
 
@@ -469,6 +482,8 @@ class InAppPurchasesDemo : public Component,
 public:
     InAppPurchasesDemo()
     {
+        manager.registerBasicFormats();
+
         Desktop::getInstance().getDefaultLookAndFeel().setUsingNativeAlertWindows (true);
 
         dm.addAudioCallback (&player);
@@ -486,7 +501,6 @@ public:
         voiceListBox.setRowHeight (66);
         voiceListBox.selectRow (0);
         voiceListBox.updateContent();
-        voiceListBox.getViewport()->setScrollOnDragEnabled (true);
 
         addAndMakeVisible (phraseLabel);
         addAndMakeVisible (phraseListBox);
@@ -499,14 +513,14 @@ public:
         soundNames = purchases.getVoiceNames();
 
        #if JUCE_ANDROID || JUCE_IOS
-        auto screenBounds = Desktop::getInstance().getDisplays().getMainDisplay().userArea;
+        auto screenBounds = Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
         setSize (screenBounds.getWidth(), screenBounds.getHeight());
        #else
         setSize (800, 600);
        #endif
     }
 
-    ~InAppPurchasesDemo()
+    ~InAppPurchasesDemo() override
     {
         dm.closeAudioDevice();
         dm.removeAudioCallback (&player);
@@ -556,15 +570,9 @@ private:
         {
             auto assetName = "Purchases/" + soundNames[idx] + String (phraseListBox.getSelectedRow()) + ".ogg";
 
-            if (auto* assetStream = createAssetInputStream (assetName.toRawUTF8()))
-            {
-                std::unique_ptr<InputStream> fileStream (assetStream);
-
-                currentPhraseData.reset();
-                fileStream->readIntoMemoryBlock (currentPhraseData);
-
-                player.play (currentPhraseData.getData(), currentPhraseData.getSize());
-            }
+            if (auto fileStream = createAssetInputStream (assetName.toRawUTF8()))
+                if (auto* reader = manager.createReaderFor (std::move (fileStream)))
+                    player.play (reader, true);
         }
     }
 
@@ -584,7 +592,7 @@ private:
     ListBox voiceListBox                       { "voiceListBox" };
     std::unique_ptr<VoiceModel> voiceModel     { new VoiceModel (purchases) };
 
-    MemoryBlock currentPhraseData;
+    AudioFormatManager manager;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InAppPurchasesDemo)
 };
