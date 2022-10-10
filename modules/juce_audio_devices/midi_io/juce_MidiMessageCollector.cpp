@@ -85,11 +85,7 @@ void MidiMessageCollector::removeNextBlockOfMessages (MidiBuffer& destBuffer,
     lastCallbackTime = timeNow;
 
     if (! incomingMessages.isEmpty())
-    {
-        FileLogger logger(File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/Syntorial/Log.txt"), "MidiMessageCollector::removeNextBlockOfMessages");
-        logger.logMessage("bufferSize: " + String(numSamples));
-        logger.logMessage("numEvents: " + String(incomingMessages.getNumEvents()));
-        
+    {        
         int numSourceSamples = jmax (1, roundToInt (msElapsed * 0.001 * sampleRate));
         int startSample = 0;
         int scale = 1 << 16;
