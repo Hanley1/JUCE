@@ -423,8 +423,8 @@ public:
 
     void toggleAdvancedSettings()
     {
-        showAdvancedSettingsButton->setButtonText ((showAdvancedSettingsButton->getToggleState() ? "Hide " : "Show ")
-                                                   + String ("advanced settings..."));
+        showAdvancedSettingsButton->setButtonText (TRANS(showAdvancedSettingsButton->getToggleState() ? "Hide " : "Show ")
+                                                   + String (TRANS("advanced settings...")));
         resized();
     }
 
