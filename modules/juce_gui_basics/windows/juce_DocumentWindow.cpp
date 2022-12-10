@@ -235,7 +235,7 @@ void DocumentWindow::resized()
 
     if (menuBar != nullptr)
         menuBar->setBounds (titleBarArea.getX(), titleBarArea.getBottom(),
-                            titleBarArea.getWidth(), menuBarHeight);
+            titleBarArea.getWidth(), getLookAndFeel().getDefaultMenuBarHeight());  // menuBarHeight);
 }
 
 BorderSize<int> DocumentWindow::getBorderThickness()
