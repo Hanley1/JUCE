@@ -264,7 +264,7 @@ public:
     void resized() override;
     /** @internal */
     void mouseWheelMove (const MouseEvent&, const MouseWheelDetails&) override;
-    
+
     void setLowestVisibleKeyFloat (float noteNumber);
     
 private:

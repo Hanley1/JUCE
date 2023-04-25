@@ -1,3 +1,4 @@
+//
 /*
   ==============================================================================
 
@@ -243,6 +244,7 @@ public:
     void colourChanged() override;
     
     void handleNoteOn  (MidiKeyboardState*, int, int, float) override;
+    void handleNoteOff (MidiKeyboardState*, int, int, float) override;
     
 #if JUCE_IOS
     void disableMousePosCheck() {shouldCheckMousePos = false;}
@@ -253,8 +255,6 @@ private:
     void drawKeyboardBackground (Graphics& g, Rectangle<float> area) override final;
     void drawWhiteKey (int midiNoteNumber, Graphics& g, Rectangle<float> area) override final;
     void drawBlackKey (int midiNoteNumber, Graphics& g, Rectangle<float> area) override final;
-
-    void handleNoteOff (MidiKeyboardState*, int, int, float) override;
 
     //==============================================================================
     void resetAnyKeysInUse();

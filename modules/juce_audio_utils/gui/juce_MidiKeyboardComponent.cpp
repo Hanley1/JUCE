@@ -478,7 +478,7 @@ void MidiKeyboardComponent::drawBlackKey (int midiNoteNumber, Graphics& g, Recta
     drawBlackNote (midiNoteNumber, g, area, state.isNoteOnForChannels (midiInChannelMask, midiNoteNumber),
                    mouseOverNotes.contains (midiNoteNumber), findColour (blackNoteColourId));
 }
-
+//
 //==============================================================================
 void MidiKeyboardComponent::handleNoteOn (MidiKeyboardState*, int /*midiChannel*/, int /*midiNoteNumber*/, float /*velocity*/)
 {
