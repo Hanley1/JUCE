@@ -1,3 +1,6 @@
+
+//
+
 /*
   ==============================================================================
 
@@ -116,7 +119,7 @@ namespace juce
 #if SPANISH
     [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
 #else
-    [DBClientsManager setupWithAppKey:@"fzmtyqfr3chhdbg"];
+    [DBClientsManager setupWithAppKey:@"r6aizlys8z1hnpn"];
 #endif
 #endif
 
