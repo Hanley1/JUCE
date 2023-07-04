@@ -37,7 +37,7 @@ namespace juce
     Array<AppInactivityCallback*> appBecomingInactiveCallbacks;
 }
 
-#ifndef IS_PRIMER
+#if !IS_PRIMER && !SIMULATOR
 #import <ObjectiveDropboxOfficial/ObjectiveDropboxOfficial.h>
 #endif
 
@@ -112,7 +112,7 @@ namespace juce
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     
-#ifndef IS_PRIMER
+#if !IS_PRIMER && !SIMULATOR
 #if SPANISH
     [DBClientsManager setupWithAppKey:@"0gufsa8x5i9aan5"];
 #else
@@ -250,7 +250,7 @@ namespace juce
 - (BOOL)application:(UIApplication *)app openURL:(NSURL *)url
             options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
     
-#ifndef IS_PRIMER
+#if !IS_PRIMER && !SIMULATOR
     
     DBOAuthCompletion completion = ^(DBOAuthResult *authResult) {
        if (authResult != nil) {
