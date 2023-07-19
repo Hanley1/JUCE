@@ -2,15 +2,15 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2020 - Raw Material Software Limited
+   Copyright (c) 2022 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
-   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
+   By using JUCE, you agree to the terms of both the JUCE 7 End-User License
+   Agreement and JUCE Privacy Policy.
 
-   End User License Agreement: www.juce.com/juce-6-licence
+   End User License Agreement: www.juce.com/juce-7-licence
    Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
@@ -206,8 +206,15 @@ private:
     public:
         ~PlayerControllerBase()
         {
-            detachPlayerStatusObserver();
-            detachPlaybackObserver();
+            // Derived classes must call detachPlayerStatusObserver() before destruction!
+            jassert (! playerStatusObserverAttached);
+
+            // Derived classes must call detachPlaybackObserver() before destruction!
+            jassert (! playbackObserverAttached);
+
+            // Note that it's unsafe to call detachPlayerStatusObserver and detachPlaybackObserver
+            // directly here, because those functions call into the derived class, which will have
+            // been destroyed at this point.
         }
 
     protected:
@@ -237,8 +244,8 @@ private:
 
                 if ([keyPath isEqualToString: nsStringLiteral ("rate")])
                 {
-                    auto oldRate = [change[NSKeyValueChangeOldKey] floatValue];
-                    auto newRate = [change[NSKeyValueChangeNewKey] floatValue];
+                    auto oldRate = [[change objectForKey: NSKeyValueChangeOldKey] floatValue];
+                    auto newRate = [[change objectForKey: NSKeyValueChangeNewKey] floatValue];
 
                     if (oldRate == 0 && newRate != 0)
                         owner.playbackStarted();
@@ -247,7 +254,7 @@ private:
                 }
                 else if ([keyPath isEqualToString: nsStringLiteral ("status")])
                 {
-                    auto status = [change[NSKeyValueChangeNewKey] intValue];
+                    auto status = [[change objectForKey: NSKeyValueChangeNewKey] intValue];
 
                     if (status == AVPlayerStatusFailed)
                         owner.errorOccurred();
@@ -340,8 +347,8 @@ private:
                         auto* urlAsset = (AVURLAsset*) playerItem.asset;
 
                         URL url (nsStringToJuce (urlAsset.URL.absoluteString));
-                        auto oldStatus = [change[NSKeyValueChangeOldKey] intValue];
-                        auto newStatus = [change[NSKeyValueChangeNewKey] intValue];
+                        auto oldStatus = [[change objectForKey: NSKeyValueChangeOldKey] intValue];
+                        auto newStatus = [[change objectForKey: NSKeyValueChangeNewKey] intValue];
 
                         // Ignore spurious notifications
                         if (oldStatus == newStatus)
@@ -492,6 +499,8 @@ private:
                                  forKeyPath: nsStringLiteral ("status")
                                     options: NSKeyValueObservingOptionNew
                                     context: this];
+
+            playerStatusObserverAttached = true;
         }
 
         void detachPlayerStatusObserver()
@@ -506,6 +515,8 @@ private:
                                         forKeyPath: nsStringLiteral ("status")
                                            context: this];
             }
+
+            playerStatusObserverAttached = false;
         }
 
         void attachPlaybackObserver()
@@ -516,6 +527,8 @@ private:
                                                          name: AVPlayerItemDidPlayToEndTimeNotification
                                                        object: [crtp().getPlayer() currentItem]];
             JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+
+            playbackObserverAttached = true;
         }
 
         void detachPlaybackObserver()
@@ -523,6 +536,8 @@ private:
             JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
             [[NSNotificationCenter defaultCenter] removeObserver: playerItemPlaybackStatusObserver.get()];
             JUCE_END_IGNORE_WARNINGS_GCC_LIKE
+
+            playbackObserverAttached = false;
         }
 
     private:
@@ -567,6 +582,8 @@ private:
             owner.playbackStopped();
         }
 
+        bool playerStatusObserverAttached = false, playbackObserverAttached = false;
+
         JUCE_DECLARE_WEAK_REFERENCEABLE (PlayerControllerBase)
     };
 
@@ -578,43 +595,19 @@ private:
         PlayerController (Pimpl& ownerToUse, bool useNativeControlsIfAvailable)
             : PlayerControllerBase (ownerToUse, useNativeControlsIfAvailable)
         {
-           #if JUCE_32BIT
-            // 32-bit builds don't have AVPlayerView, so need to use a layer
-            useNativeControls = false;
-           #endif
-
-            if (useNativeControls)
+            wrappedPlayer = [&]() -> std::unique_ptr<WrappedPlayer>
             {
-               #if ! JUCE_32BIT
-                playerView = [[AVPlayerView alloc] init];
-               #endif
-            }
-            else
-            {
-                view = [[NSView alloc] init];
-                playerLayer = [[AVPlayerLayer alloc] init];
-                [view setLayer: playerLayer];
-            }
-        }
+                if (@available (macOS 10.9, *))
+                    if (useNativeControls)
+                        return std::make_unique<WrappedPlayerView>();
 
-        ~PlayerController()
-        {
-           #if JUCE_32BIT
-            [view release];
-            [playerLayer release];
-           #else
-            [playerView release];
-           #endif
+                return std::make_unique<WrappedPlayerLayer> ();
+            }();
         }
 
         NSView* getView()
         {
-           #if ! JUCE_32BIT
-            if (useNativeControls)
-                return playerView;
-           #endif
-
-            return view;
+            return wrappedPlayer->getView();
         }
 
         Result load (NSURL* url)
@@ -640,12 +633,7 @@ private:
             detachPlayerStatusObserver();
             detachPlaybackObserver();
 
-           #if ! JUCE_32BIT
-            if (useNativeControls)
-                [playerView setPlayer: player];
-            else
-           #endif
-                [playerLayer setPlayer: player];
+            wrappedPlayer->setPlayer (player);
 
             if (player != nil)
             {
@@ -656,21 +644,44 @@ private:
 
         AVPlayer* getPlayer() const
         {
-           #if ! JUCE_32BIT
-            if (useNativeControls)
-                return [playerView player];
-           #endif
-
-            return [playerLayer player];
+            return wrappedPlayer->getPlayer();
         }
 
     private:
-        NSView* view = nil;
-        AVPlayerLayer* playerLayer = nil;
-       #if ! JUCE_32BIT
-        // 32-bit builds don't have AVPlayerView
-        AVPlayerView* playerView = nil;
-       #endif
+        struct WrappedPlayer
+        {
+            virtual ~WrappedPlayer() = default;
+            virtual NSView* getView() const = 0;
+            virtual AVPlayer* getPlayer() const = 0;
+            virtual void setPlayer (AVPlayer*) = 0;
+        };
+
+        class WrappedPlayerLayer : public WrappedPlayer
+        {
+        public:
+            WrappedPlayerLayer ()                       { [view.get() setLayer: playerLayer.get()]; }
+            NSView* getView() const override            { return view.get(); }
+            AVPlayer* getPlayer() const override        { return [playerLayer.get() player]; }
+            void setPlayer (AVPlayer* player) override  { [playerLayer.get() setPlayer: player]; }
+
+        private:
+            NSUniquePtr<NSView> view                    { [[NSView alloc] init] };
+            NSUniquePtr<AVPlayerLayer> playerLayer      { [[AVPlayerLayer alloc] init] };
+        };
+
+        class API_AVAILABLE (macos (10.9)) WrappedPlayerView : public WrappedPlayer
+        {
+        public:
+            WrappedPlayerView() = default;
+            NSView* getView() const override            { return playerView.get(); }
+            AVPlayer* getPlayer() const override        { return [playerView.get() player]; }
+            void setPlayer (AVPlayer* player) override  { [playerView.get() setPlayer: player]; }
+
+        private:
+            NSUniquePtr<AVPlayerView> playerView        { [[AVPlayerView alloc] init] };
+        };
+
+        std::unique_ptr<WrappedPlayer> wrappedPlayer;
     };
    #else
     //==============================================================================
@@ -727,13 +738,19 @@ private:
 
         void setPlayer (AVPlayer* playerToUse)
         {
+            detachPlayerStatusObserver();
+            detachPlaybackObserver();
+
             if (useNativeControls)
                 [playerViewController.get() setPlayer: playerToUse];
             else
                 [playerLayer.get() setPlayer: playerToUse];
 
-            attachPlayerStatusObserver();
-            attachPlaybackObserver();
+            if (playerToUse != nil)
+            {
+                attachPlayerStatusObserver();
+                attachPlaybackObserver();
+            }
         }
 
     private:
