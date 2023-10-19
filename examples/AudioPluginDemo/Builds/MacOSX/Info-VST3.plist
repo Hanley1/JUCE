@@ -8,7 +8,7 @@
     <key>CFBundleIconFile</key>
     <string></string>
     <key>CFBundleIdentifier</key>
-    <string>com.yourcompany.AudioPluginDemo</string>
+    <string>com.JUCE.AudioPluginDemo</string>
     <key>CFBundleName</key>
     <string>AudioPluginDemo</string>
     <key>CFBundleDisplayName</key>

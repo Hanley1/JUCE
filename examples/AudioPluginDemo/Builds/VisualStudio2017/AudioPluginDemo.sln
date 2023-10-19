@@ -1,5 +1,6 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2017
+# Visual Studio 15
 
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AudioPluginDemo - Standalone Plugin", "AudioPluginDemo_StandalonePlugin.vcxproj", "{0E8983CB-D357-1810-AC2A-5ADB0CB2D519}"
 	ProjectSection(ProjectDependencies) = postProject

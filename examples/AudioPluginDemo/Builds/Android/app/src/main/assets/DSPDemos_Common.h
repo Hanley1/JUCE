@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE examples.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2022 - Raw Material Software Limited
 
    The code included in this file is provided under the terms of the ISC license
    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
@@ -25,7 +25,7 @@ using namespace dsp;
 struct DSPDemoParameterBase    : public ChangeBroadcaster
 {
     DSPDemoParameterBase (const String& labelName) : name (labelName) {}
-    virtual ~DSPDemoParameterBase() {}
+    virtual ~DSPDemoParameterBase() = default;
 
     virtual Component* getComponent() = 0;
 
@@ -104,7 +104,7 @@ public:
         thumbnail.addChangeListener (this);
     }
 
-    ~AudioThumbnailComponent()
+    ~AudioThumbnailComponent() override
     {
         thumbnail.removeChangeListener (this);
     }
@@ -142,7 +142,7 @@ public:
         loadURL (u);
     }
 
-    URL getCurrentURL()    { return currentURL; }
+    URL getCurrentURL() const   { return currentURL; }
 
     void setTransportSource (AudioTransportSource* newSource)
     {
@@ -189,21 +189,7 @@ private:
 
         currentURL = u;
 
-        InputSource* inputSource = nullptr;
-
-       #if ! JUCE_IOS
-        if (u.isLocalFile())
-        {
-            inputSource = new FileInputSource (u.getLocalFile());
-        }
-        else
-       #endif
-        {
-            if (inputSource == nullptr)
-                inputSource = new URLInputSource (u);
-        }
-
-        thumbnail.setSource (inputSource);
+        thumbnail.setSource (makeInputSource (u).release());
 
         if (notify)
             sendChangeMessage();
@@ -308,12 +294,16 @@ struct DSPDemo  : public AudioSource,
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
     {
-        jassert (bufferToFill.buffer != nullptr);
+        if (bufferToFill.buffer == nullptr)
+        {
+            jassertfalse;
+            return;
+        }
 
         inputSource->getNextAudioBlock (bufferToFill);
 
-        dsp::AudioBlock<float> block (*bufferToFill.buffer,
-                                      (size_t) bufferToFill.startSample);
+        AudioBlock<float> block (*bufferToFill.buffer,
+                                 (size_t) bufferToFill.startSample);
 
         ScopedLock audioLock (audioCallbackLock);
         this->process (ProcessContextReplacing<float> (block));
@@ -367,7 +357,7 @@ public:
         setSize (800, 250);
     }
 
-    ~AudioFileReaderComponent()
+    ~AudioFileReaderComponent() override
     {
         signalThreadShouldExit();
         stop();
@@ -403,33 +393,27 @@ public:
         transportSource.reset();
         readerSource.reset();
 
-        AudioFormatReader* newReader = nullptr;
+        auto source = makeInputSource (fileToPlay);
 
-       #if ! JUCE_IOS
-        if (fileToPlay.isLocalFile())
-        {
-            newReader = formatManager.createReaderFor (fileToPlay.getLocalFile());
-        }
-        else
-       #endif
-        {
-            if (newReader == nullptr)
-                newReader = formatManager.createReaderFor (fileToPlay.createInputStream (false));
-        }
+        if (source == nullptr)
+            return false;
 
-        reader.reset (newReader);
+        auto stream = rawToUniquePtr (source->createInputStream());
 
-        if (reader.get() != nullptr)
-        {
-            readerSource.reset (new AudioFormatReaderSource (reader.get(), false));
-            readerSource->setLooping (loopState.getValue());
+        if (stream == nullptr)
+            return false;
 
-            init();
+        reader = rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
 
-            return true;
-        }
+        if (reader == nullptr)
+            return false;
 
-        return false;
+        readerSource.reset (new AudioFormatReaderSource (reader.get(), false));
+        readerSource->setLooping (loopState.getValue());
+
+        init();
+
+        return true;
     }
 
     void togglePlay()
@@ -551,7 +535,7 @@ private:
             loopButton.getToggleStateValue().referTo (audioFileReader.loopState);
         }
 
-        ~AudioPlayerHeader()
+        ~AudioPlayerHeader() override
         {
             audioFileReader.playState.removeListener (this);
         }
@@ -587,37 +571,42 @@ private:
         {
             audioFileReader.stop();
 
-            if (fileChooser == nullptr)
+            if (fileChooser != nullptr)
+                return;
+
+            if (! RuntimePermissions::isGranted (RuntimePermissions::readExternalStorage))
             {
                 SafePointer<AudioPlayerHeader> safeThis (this);
-
-                if (! RuntimePermissions::isGranted (RuntimePermissions::readExternalStorage))
-                {
-                    RuntimePermissions::request (RuntimePermissions::readExternalStorage,
-                                                 [safeThis] (bool granted) mutable
-                                                 {
-                                                     if (granted)
-                                                         safeThis->openFile();
-                                                 });
-                    return;
-                }
-
-                fileChooser.reset (new FileChooser ("Select an audio file...", File(), "*.wav;*.mp3;*.aif"));
-
-                fileChooser->launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
-                                          [safeThis] (const FileChooser& fc) mutable
-                                          {
-                                              if (safeThis != nullptr && fc.getURLResults().size() > 0)
-                                              {
-                                                  auto u = fc.getURLResult();
-
-                                                  if (! safeThis->audioFileReader.loadURL (u))
-                                                      NativeMessageBox::showOkCancelBox (AlertWindow::WarningIcon, "Error loading file", "Unable to load audio file", nullptr, nullptr);
-                                                  else
-                                                      safeThis->thumbnailComp.setCurrentURL (u);
-                                              }
-                                          }, nullptr);
+                RuntimePermissions::request (RuntimePermissions::readExternalStorage,
+                                             [safeThis] (bool granted) mutable
+                                             {
+                                                 if (safeThis != nullptr && granted)
+                                                     safeThis->openFile();
+                                             });
+                return;
             }
+
+            fileChooser.reset (new FileChooser ("Select an audio file...", File(), "*.wav;*.mp3;*.aif"));
+
+            fileChooser->launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
+                                      [this] (const FileChooser& fc) mutable
+                                      {
+                                          if (fc.getURLResults().size() > 0)
+                                          {
+                                              const auto u = fc.getURLResult();
+
+                                              if (! audioFileReader.loadURL (u))
+                                                  NativeMessageBox::showAsync (MessageBoxOptions()
+                                                                                 .withIconType (MessageBoxIconType::WarningIcon)
+                                                                                 .withTitle ("Error loading file")
+                                                                                 .withMessage ("Unable to load audio file"),
+                                                                               nullptr);
+                                              else
+                                                  thumbnailComp.setCurrentURL (u);
+                                          }
+
+                                          fileChooser = nullptr;
+                                      }, nullptr);
         }
 
         void changeListenerCallback (ChangeBroadcaster*) override

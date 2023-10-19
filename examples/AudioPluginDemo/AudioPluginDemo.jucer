@@ -4,7 +4,7 @@
               companyWebsite="http://juce.com" defines="PIP_JUCE_EXAMPLES_DIRECTORY=L1VzZXJzL0pvZS9EZXZlbG9wZXIvSlVDRS9leGFtcGxlcw=="
               projectType="audioplug" pluginManufacturer="JUCE" pluginAUIsSandboxSafe="1"
               pluginFormats="buildVST3,buildAU,buildStandalone,buildAUv3" pluginCharacteristicsValue="pluginWantsMidiIn,pluginProducesMidiOut,pluginEditorRequiresKeys"
-              id="S836eJ" jucerVersion="5.3.2">
+              id="S836eJ" jucerFormatVersion="1">
   <MAINGROUP id="iUIQdw" name="AudioPluginDemo">
     <GROUP id="{ECAE6144-7FCB-32E7-AE7A-A5B12BCBB646}" name="Source">
       <FILE id="y3PuPd" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
