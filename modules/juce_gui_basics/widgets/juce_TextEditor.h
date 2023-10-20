@@ -37,8 +37,8 @@ namespace juce
 
     @tags{GUI}
 */
-class JUCE_API  TextEditor  : public Component,
-                              public TextInputTarget,
+class JUCE_API  TextEditor  : public TextInputTarget,
+                              public Component,
                               public SettableTooltipClient
 {
 public:
@@ -743,6 +743,8 @@ public:
     void setTemporaryUnderlining (const Array<Range<int>>&) override;
     /** @internal */
     VirtualKeyboardType getKeyboardType() override;
+    /** @internal */
+    std::unique_ptr<AccessibilityHandler> createAccessibilityHandler() override;
 
 static bool virtualKeyboardIsShowing;
 
@@ -840,7 +842,6 @@ private:
     ListenerList<Listener> listeners;
     Array<Range<int>> underlinedSections;
 
-    std::unique_ptr<AccessibilityHandler> createAccessibilityHandler() override;
     void moveCaret (int newCaretPos);
     void moveCaretTo (int newPosition, bool isSelecting);
     void recreateCaret();
