@@ -274,6 +274,7 @@ private:
     Array<KeyPress> keyPresses;
     Array<int> keyPressNotes;
     BigInteger keysPressed, keysCurrentlyDrawnDown;
+    std::unique_ptr<FileLogger> midiLogger;
 
     std::atomic<bool> noPendingUpdates { true };
 
