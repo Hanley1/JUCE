@@ -38,7 +38,14 @@ MidiKeyboardComponent::MidiKeyboardComponent (MidiKeyboardState& stateToUse, Ori
     int note = 0;
 
     for (char c : "awsedftgyhujkolp;")
-        setKeyPressForNote ({ c, 0, 0 }, note++);
+    {
+        if (c != 0)
+        {
+            midiLogger->logMessage("Send key press in for letter " + String(c) + " with note number " + String(note));
+            setKeyPressForNote({ c, 0, 0 }, note++);
+        }
+        
+    }
 
     mouseOverNotes.insertMultiple (0, -1, 32);
     mouseDownNotes.insertMultiple (0, -1, 32);
@@ -93,6 +100,8 @@ void MidiKeyboardComponent::setKeyPressForNote (const KeyPress& key, int midiNot
 
     keyPressNotes.add (midiNoteOffsetFromC);
     keyPresses.add (key);
+
+    midiLogger->logMessage("Key Press added for: keyCode<" + String(key.getKeyCode()) + "> modifiers<" + String(key.getModifiers().getRawFlags()) + "> text character<" + String(key.getTextCharacter() + "> description<" + key.getTextDescription() + ">"));
 }
 
 void MidiKeyboardComponent::removeKeyPressForNote (int midiNoteOffsetFromC)
