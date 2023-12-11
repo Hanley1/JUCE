@@ -30,8 +30,6 @@ namespace juce
 MidiKeyboardComponent::MidiKeyboardComponent (MidiKeyboardState& stateToUse, Orientation orientationToUse)
     : KeyboardComponentBase (orientationToUse), state (stateToUse)
 {
-    midiLogger = std::make_unique<FileLogger>(File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/Syntorial/MIDILog.txt"), "MIDIKeyboardComp Launched");
-
     state.addListener (this);
 
     // initialise with a default set of qwerty key-mappings..
@@ -286,7 +284,6 @@ bool MidiKeyboardComponent::keyStateChanged (bool /*isKeyDown*/)
         {
             if (! keysPressed[note])
             {
-                midiLogger->logMessage("Note On: " + keyPresses.getReference(i).getTextDescription());
                 keysPressed.setBit (note);
                 state.noteOn (midiChannel, note, velocity);
                 keyPressUsed = true;
@@ -296,7 +293,6 @@ bool MidiKeyboardComponent::keyStateChanged (bool /*isKeyDown*/)
         {
             if (keysPressed[note])
             {
-                midiLogger->logMessage("Note Off: " + keyPresses.getReference(i).getTextDescription());
                 keysPressed.clearBit (note);
                 state.noteOff (midiChannel, note, 0.0f);
                 keyPressUsed = true;
