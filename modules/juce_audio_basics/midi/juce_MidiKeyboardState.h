@@ -183,7 +183,6 @@ private:
     std::atomic<uint16> noteStates[128];
     MidiBuffer eventsToAdd;
     ListenerList<Listener> listeners;
-    std::unique_ptr<FileLogger> midiLogger;
 
     void noteOnInternal  (int midiChannel, int midiNoteNumber, float velocity);
     void noteOffInternal (int midiChannel, int midiNoteNumber, float velocity);

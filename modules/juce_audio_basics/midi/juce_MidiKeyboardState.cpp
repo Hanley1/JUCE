@@ -25,7 +25,6 @@ namespace juce
 
 MidiKeyboardState::MidiKeyboardState()
 {
-    midiLogger = std::make_unique<FileLogger>(File(File::getSpecialLocation(File::userDocumentsDirectory).getFullPathName() + "/Syntorial/MIDILog.txt"), "MIDIKeyboardState Launched");
     zerostruct (noteStates);
 }
 
@@ -60,7 +59,6 @@ void MidiKeyboardState::noteOn (const int midiChannel, const int midiNoteNumber,
 
     if (isPositiveAndBelow (midiNoteNumber, 128))
     {
-        midiLogger->logMessage(SystemStats::getStackBacktrace());
         const int timeNow = (int) Time::getMillisecondCounter();
         eventsToAdd.addEvent (MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity), timeNow);
         eventsToAdd.clear (0, timeNow - 500);
