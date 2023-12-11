@@ -36,7 +36,10 @@ MidiKeyboardComponent::MidiKeyboardComponent (MidiKeyboardState& stateToUse, Ori
     const std::string_view keys { "awsedftgyhujkolp;" };
 
     for (const char& c : keys)
-        setKeyPressForNote ({c, 0, 0}, (int) std::distance (keys.data(), &c));
+    {
+        if (c != 0)
+            setKeyPressForNote({ c, 0, 0 }, (int)std::distance(keys.data(), &c));
+    }
 
     mouseOverNotes.insertMultiple (0, -1, 32);
     mouseDownNotes.insertMultiple (0, -1, 32);
