@@ -730,11 +730,10 @@ static BorderSize<int> getSafeAreaInsets (float masterScale)
     if (@available (iOS 11.0, *))
     {
         UIEdgeInsets safeInsets = TemporaryWindow().window.safeAreaInsets;
-
-        auto getInset = [&] (CGFloat original) { return roundToInt (original / masterScale); };
-
-        return { getInset (safeInsets.top),    getInset (safeInsets.left),
-                 getInset (safeInsets.bottom), getInset (safeInsets.right) };
+        return detail::WindowingHelpers::roundToInt (BorderSize<double> { safeInsets.top,
+                                                                          safeInsets.left,
+                                                                          safeInsets.bottom,
+                                                                          safeInsets.right }.multipliedBy (1.0 / (double) masterScale));
     }
    #endif
 
@@ -839,6 +838,8 @@ void Displays::findDisplays (float masterScale)
         d.totalArea = convertToRectInt ([s bounds]) / masterScale;
         d.userArea = getRecommendedWindowBounds() / masterScale;
         d.safeAreaInsets = getSafeAreaInsets (masterScale);
+        const auto scaledInsets = keyboardChangeDetector.getInsets().multipliedBy (1.0 / (double) masterScale);
+        d.keyboardInsets = detail::WindowingHelpers::roundToInt (scaledInsets);
         d.isMain = true;
         d.scale = masterScale * s.scale;
         d.dpi = 160 * d.scale;
