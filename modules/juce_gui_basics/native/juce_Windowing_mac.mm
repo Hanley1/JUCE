@@ -304,11 +304,11 @@ public:
     {
         static DelegateClass delegateClass;
         delegate.reset ([delegateClass.createInstance() init]);
-        observer.emplace (delegate.get(),
-                          darkModeSelector,
-                          @"AppleInterfaceThemeChangedNotification",
-                          nil,
-                          [NSDistributedNotificationCenter class]);
+//        observer.emplace (delegate.get(),
+//                          darkModeSelector,
+//                          @"AppleInterfaceThemeChangedNotification",
+//                          nil,
+//                          [NSDistributedNotificationCenter class]);
     }
 
 private:
