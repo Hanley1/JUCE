@@ -304,6 +304,8 @@ public:
     {
         static DelegateClass delegateClass;
         delegate.reset ([delegateClass.createInstance() init]);
+        
+        // this observer was causing Syntorial to crash whenever the Mac's theme changed between light and dark
 //        observer.emplace (delegate.get(),
 //                          darkModeSelector,
 //                          @"AppleInterfaceThemeChangedNotification",
