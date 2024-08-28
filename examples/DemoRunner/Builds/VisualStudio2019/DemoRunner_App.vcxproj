@@ -3251,6 +3251,7 @@
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_AudioVisualiserComponent.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_BluetoothMidiDevicePairingDialogue.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_KeyboardComponentBase.h"/>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_MidiKeyboardComponent copy.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_MidiKeyboardComponent.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_MPEKeyboardComponent.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\players\juce_AudioProcessorPlayer.h"/>
@@ -3893,6 +3894,7 @@
     <ClInclude Include="..\..\..\..\modules\juce_video\native\juce_Video_android.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_video\native\juce_Video_mac.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_video\native\juce_Video_windows.h"/>
+    <ClInclude Include="..\..\..\..\modules\juce_video\native\myAVPlayer.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_video\playback\juce_VideoComponent.h"/>
     <ClInclude Include="..\..\..\..\modules\juce_video\juce_video.h"/>
     <ClInclude Include="..\..\JuceLibraryCode\JuceHeader.h"/>

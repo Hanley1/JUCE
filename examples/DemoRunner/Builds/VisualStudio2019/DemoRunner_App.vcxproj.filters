@@ -4947,6 +4947,9 @@
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_KeyboardComponentBase.h">
       <Filter>JUCE Modules\juce_audio_utils\gui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_MidiKeyboardComponent copy.h">
+      <Filter>JUCE Modules\juce_audio_utils\gui</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_audio_utils\gui\juce_MidiKeyboardComponent.h">
       <Filter>JUCE Modules\juce_audio_utils\gui</Filter>
     </ClInclude>
@@ -6871,6 +6874,9 @@
       <Filter>JUCE Modules\juce_video\native</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_video\native\juce_Video_windows.h">
+      <Filter>JUCE Modules\juce_video\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_video\native\myAVPlayer.h">
       <Filter>JUCE Modules\juce_video\native</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_video\playback\juce_VideoComponent.h">

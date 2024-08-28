@@ -832,6 +832,8 @@ void Displays::findDisplays (float masterScale)
 
     JUCE_AUTORELEASEPOOL
     {
+        static OnScreenKeyboardChangeDetectorImpl keyboardChangeDetector;
+        
         UIScreen* s = [UIScreen mainScreen];
 
         Display d;
