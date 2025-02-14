@@ -96,7 +96,6 @@ namespace juce
 - (void) userNotificationCenter: (UNUserNotificationCenter*) center didReceiveNotificationResponse: (UNNotificationResponse*) response
           withCompletionHandler: (void(^)())completionHandler;
 #endif
-#endif
 
 @end
 
@@ -262,6 +261,16 @@ namespace juce
             options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
     
 #if !IS_PRIMER && !SIMULATOR
+    
+    NSString *urlString = url.absoluteString;
+    NSLog(@"Received URL: %@", urlString); // Print the URL to console
+
+    // Check if the URL starts with "syntorial://"
+    if ([urlString hasPrefix:@"syntorial://"]) {
+        NSLog(@"Handling Syntorial URL: %@", urlString);
+        JUCEApplicationBase::getInstance()->anotherInstanceStarted(String([urlString UTF8String]));
+        return YES;
+    }
     
     DBOAuthCompletion completion = ^(DBOAuthResult *authResult) {
        if (authResult != nil) {
@@ -497,7 +506,6 @@ struct BadgeUpdateTrait
         [invocation invoke];
     }
 }
-#endif
 #endif
 
 @end
