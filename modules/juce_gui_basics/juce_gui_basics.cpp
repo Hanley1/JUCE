@@ -199,6 +199,7 @@
  #include <juce_graphics/native/juce_Direct2DGraphicsContext_windows.h>
  #include <juce_graphics/native/juce_Direct2DHwndContext_windows.h>
  #include <juce_graphics/native/juce_DirectX_windows.h>
+ #include <juce_graphics/native/juce_Direct2DPixelDataPage_windows.h>
  #include <juce_graphics/native/juce_Direct2DImage_windows.h>
  #include <juce_graphics/native/juce_Direct2DImageContext_windows.h>
 
@@ -368,6 +369,7 @@
 #include "widgets/juce_Slider.cpp"
 #include "widgets/juce_TableHeaderComponent.cpp"
 #include "widgets/juce_TableListBox.cpp"
+#include "widgets/juce_TextEditorModel.cpp"
 #include "widgets/juce_TextEditor.cpp"
 #include "widgets/juce_Toolbar.cpp"
 #include "widgets/juce_ToolbarItemComponent.cpp"
