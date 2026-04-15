@@ -163,6 +163,19 @@ API_AVAILABLE (ios (13.0))
     SharedResourcePointer<WindowSceneTracker> windowSceneTracker;
 }
 
+- (void) handleOpenURLContexts: (NSSet<UIOpenURLContext*>*) URLContexts
+{
+    for (UIOpenURLContext* ctx in URLContexts)
+    {
+        juce::String urlString = juce::nsStringToJuce (ctx.URL.absoluteString);
+        juce::MessageManager::callAsync ([urlString]()
+        {
+            if (auto* app = juce::JUCEApplicationBase::getInstance())
+                app->anotherInstanceStarted (urlString);
+        });
+    }
+}
+
 - (void)           scene: (UIScene*) scene
     willConnectToSession: (UISceneSession*) session
                  options: (UISceneConnectionOptions*) connectionOptions
@@ -171,6 +184,14 @@ API_AVAILABLE (ios (13.0))
         windowSceneTracker->setWindowScene (static_cast<UIWindowScene*> (scene));
     else
         jassertfalse;
+
+    if (connectionOptions.URLContexts.count > 0)
+        [self handleOpenURLContexts: connectionOptions.URLContexts];
+}
+
+- (void) scene: (UIScene*) scene openURLContexts: (NSSet<UIOpenURLContext*>*) URLContexts
+{
+    [self handleOpenURLContexts: URLContexts];
 }
 
 - (void) sceneDidDisconnect: (UIScene*) scene
