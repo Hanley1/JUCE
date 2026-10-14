@@ -154,7 +154,8 @@ Found on 2026-10-14 by running `survived` against the old updates. **None of the
 2. **iPad Dropbox setup (lost in the 8.0.12 update, March 2026, so since 2.3.400).** Our iOS app
    delegate called `[DBClientsManager setupWithAppKey:]` at launch and passed Dropbox's sign-in
    redirect to `handleRedirectURL`. Both are gone and nothing else in either app does them, so
-   **iPad Dropbox is probably broken** (`Source/iOS/Dropbox/`). Needs an iPad test.
+   **iPad Dropbox is probably broken** (`Source/iOS/Dropbox/`). **DECIDED (Joe, 2026-10-14): leave it
+   broken, do not restore.** Dropbox support is being dropped anyway, and new users never get it.
 3. **iPad "don't back up downloads to iCloud" (same update).** At launch we created
    `Application Support/Resources` and set `NSURLIsExcludedFromBackupKey` on it. Gone. The flag
    stays on the folder for existing installs, so only fresh installs since 2.3.400 are affected:
