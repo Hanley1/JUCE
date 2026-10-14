@@ -150,7 +150,10 @@ Found on 2026-10-14 by running `survived` against the old updates. **None of the
    was left behind as `.orig` (deleted 2026-10-14, recoverable from git) and the flag has been
    **always false** since. Effects to verify on iPad: `IOSTextEditor` never sees the keyboard
    appear, so its tap-out-to-dismiss never runs; the Upgrade and Register screens never re-lay-out
-   when the keyboard shows.
+   when the keyboard shows. **Checked 2026-10-14: cosmetic only, left as is (Joe).** iOS shows the
+   keyboard itself, so typing works. The Upgrade/Register re-layout code is already commented out.
+   What's actually lost: a text box stays focused (cursor still showing) after the keyboard is
+   dismissed, and a 500 ms timer keeps polling after a tap.
 2. **iPad Dropbox setup (lost in the 8.0.12 update, March 2026, so since 2.3.400).** Our iOS app
    delegate called `[DBClientsManager setupWithAppKey:]` at launch and passed Dropbox's sign-in
    redirect to `handleRedirectURL`. Both are gone and nothing else in either app does them, so
@@ -160,12 +163,14 @@ Found on 2026-10-14 by running `survived` against the old updates. **None of the
    `Application Support/Resources` and set `NSURLIsExcludedFromBackupKey` on it. Gone. The flag
    stays on the folder for existing installs, so only fresh installs since 2.3.400 are affected:
    their downloaded lessons now count against the user's iCloud backup. Apple's review guidelines
-   also ask that re-downloadable content be excluded from backup.
+   also ask that re-downloadable content be excluded from backup. **FIXED IN APP CODE (2026-10-14,
+   syntorial `7c3e0ce6`, ships in 2.3.600):** `ResourceCopier::excludeResourcesFromBackup()`, called
+   from `TopComponent::setupPaths()`. Deliberately not put back into JUCE.
 4. Also dropped in that update, probably harmless: an iCloud key-value-store change observer (it only
    logged) and our older push-notification delegate plumbing (JUCE 8 has its own).
 
-The right home for 2 and 3 is probably **app code** (e.g. a startup hook in Syntorial's iOS code)
-rather than JUCE, so the next JUCE update can't drop them again. Decision pending.
+All four are now decided (see each item). Rule going forward: app behaviour that doesn't need to
+live inside JUCE goes in app code, where a JUCE update can't drop it.
 
 ## Suspected dead (check, then remove at the next update)
 
